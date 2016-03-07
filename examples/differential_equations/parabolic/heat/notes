@@ -1,0 +1,12 @@
+This directory contains MMSP code applying the Method of Manufactured Solutions to the Heat Equation.
+The model and notation used here comes from the first paper below, with additional contextual advice
+from the second.
+
+Send questions or comments to trevor.keller@gmail.com (Trevor Keller)
+
+References:
+
+1. N Malaya, KC Estacio-Hiroms, RH Stogner, KW Schulz, PT Bauman, GF Carey. "MASA: A library for verification using manufactured and analytical solutions."
+   Engineering with Computers 29:487-496 (2013).
+2. K Salari, P Knupp. "Code verification by the method of manufactured solutions."
+   Sandia National Laboratories SAND2000-1444 (2000).
