@@ -32,16 +32,16 @@ coefficients::coefficients(int dim) : // constructor
 		// Set coeffients for each dimension. If a dimension does not exist, leave its value zero.
 		if (dim==1) {
 			int L=512;
-			N[0]=L;      h[0]=1.0/N[0];    Ax[0] = 4.0*M_PI;    At[0] = M_PI*dt;
+			N[0]=L;      h[0]=1.0/N[0];    Ax[0] = 4.0*M_PI;    At[0] = M_PI*2.0*dt;
 		} else if (dim==2) {
 			int L=128;
-			N[0]=2*L;    h[0]=1.0/N[0];    Ax[0] = 4.0*M_PI;    At[0] = M_PI*dt;
-			N[1]=L;      h[1]=1.0/N[1];    Ax[1] = 2.0*M_PI;    At[1] = M_PI*dt;
+			N[0]=2*L;    h[0]=1.0/N[0];    Ax[0] = 4.0*M_PI;    At[0] = M_PI*2.0*dt;
+			N[1]=L;      h[1]=1.0/N[1];    Ax[1] = 2.0*M_PI;    At[1] = M_PI*2.0*dt;
 		} else if (dim==3) {
 			int L=64;
-			N[0]=2*L;    h[0]=1.0/N[0];    Ax[0] = 4.0*M_PI;    At[0] = M_PI*dt;
-			N[1]=L;      h[1]=1.0/N[1];    Ax[1] = 2.0*M_PI;    At[1] = M_PI*dt;
-			N[2]=L/2;    h[2]=1.0/N[2];    Ax[2] = 1.0*M_PI;    At[2] = M_PI*dt;
+			N[0]=2*L;    h[0]=1.0/N[0];    Ax[0] = 4.0*M_PI;    At[0] = M_PI*2.0*dt;
+			N[1]=L;      h[1]=1.0/N[1];    Ax[1] = 2.0*M_PI;    At[1] = M_PI*2.0*dt;
+			N[2]=L/2;    h[2]=1.0/N[2];    Ax[2] = 1.0*M_PI;    At[2] = M_PI*2.0*dt;
 		}
 }
 
