@@ -23,25 +23,25 @@ coefficients::coefficients(int dim) : // constructor
 {
 		// Set spatially-independent coefficients
 		dt = 0.00001;   // timestep
-		T0 = 0.0;  // minimum temperature
+		T0 = 1.0;  // minimum temperature
 		rho = 1.0;   // What units?
 		At[3] = 0.5; // fourth dimension is time -- cannot be zero, unless you implement an iterative solver for steady-state
-		Ck[0] = 0.1;    Ck[1] = 0.01;    Ck[2] = 0.001;
-		Cc[0] = 0.1;    Cc[1] = 0.01;    Cc[2] = 0.001;
+		Ck[0] = 0.1;    Ck[1] = 0.001;    Ck[2] = 0.0001;
+		Cc[0] = 10.0;    Cc[1] = 1.0;    Cc[2] = 0.01;
 
 		// Set coeffients for each dimension. If a dimension does not exist, leave its value zero.
 		if (dim==1) {
 			int L=512;
-			N[0]=L;      h[0]=1.0/N[0];    Ax[0] = 4.0*M_PI*h[0];    At[0] = M_PI/100;
+			N[0]=L;      h[0]=1.0/N[0];    Ax[0] = 4.0*M_PI;    At[0] = M_PI/(100.0*dt);
 		} else if (dim==2) {
 			int L=128;
-			N[0]=2*L;    h[0]=1.0/N[0];    Ax[0] = 4.0*M_PI*h[0];    At[0] = M_PI/100;
-			N[1]=L;      h[1]=1.0/N[1];    Ax[1] = 2.0*M_PI*h[1];    At[1] = M_PI/100;
+			N[0]=2*L;    h[0]=1.0/N[0];    Ax[0] = 4.0*M_PI;    At[0] = M_PI/(100.0*dt);
+			N[1]=L;      h[1]=1.0/N[1];    Ax[1] = 2.0*M_PI;    At[1] = M_PI/( 75.0*dt);
 		} else if (dim==3) {
 			int L=64;
-			N[0]=2*L;    h[0]=1.0/N[0];    Ax[0] = 4.0*M_PI*h[0];    At[0] = M_PI/100;
-			N[1]=L;      h[1]=1.0/N[1];    Ax[1] = 2.0*M_PI*h[1];    At[1] = M_PI/100;
-			N[2]=L/2;    h[2]=1.0/N[2];    Ax[2] =     M_PI*h[2];    At[2] = M_PI/100;
+			N[0]=2*L;    h[0]=1.0/N[0];    Ax[0] = 4.0*M_PI;    At[0] = M_PI/(100.0*dt);
+			N[1]=L;      h[1]=1.0/N[1];    Ax[1] = 2.0*M_PI;    At[1] = M_PI/( 75.0*dt);
+			N[2]=L/2;    h[2]=1.0/N[2];    Ax[2] = 1.0*M_PI;    At[2] = M_PI/( 50.0*dt);
 		}
 }
 
@@ -56,6 +56,9 @@ void generate(int dim, const char* filename)
 			vector<int> x = MMSP::position(initGrid,n);
 			initGrid(n) = MS_T(x, 0, vars.T0, vars.h, vars.Ax, vars.At);
 		}
+		double prefactor = (vars.dt * MS_k(vars.Ck, initGrid(nodes(initGrid)/2))) /
+		                   (2.0*vars.rho*MS_Cp(vars.Cc, initGrid(nodes(initGrid)/2)));
+		printf("CFL condition is %.2e\n",prefactor/pow(vars.h[0],2));
 
 		output(initGrid,filename);
 	}
@@ -70,6 +73,9 @@ void generate(int dim, const char* filename)
 			vector<int> x = MMSP::position(initGrid,n);
 			initGrid(n) = MS_T(x, 0, vars.T0, vars.h, vars.Ax, vars.At);
 		}
+		double prefactor = (vars.dt * MS_k(vars.Ck, initGrid(nodes(initGrid)/2))) /
+		                   (2.0*vars.rho*MS_Cp(vars.Cc, initGrid(nodes(initGrid)/2)));
+		printf("CFL condition is %.2e\n",prefactor*(1.0/pow(vars.h[0],2)+1.0/pow(vars.h[1],2)));
 
 		output(initGrid,filename);
 	}
@@ -85,6 +91,9 @@ void generate(int dim, const char* filename)
 			vector<int> x = MMSP::position(initGrid,n);
 			initGrid(n) = MS_T(x, 0, vars.T0, vars.h, vars.Ax, vars.At);
 		}
+		double prefactor = (vars.dt * MS_k(vars.Ck, initGrid(nodes(initGrid)/2)))/
+		                   (2.0*vars.rho*MS_Cp(vars.Cc, initGrid(nodes(initGrid)/2)));
+		printf("CFL condition is %.2e\n",prefactor*(1.0/pow(vars.h[0],2)+1.0/pow(vars.h[1],2)+1.0/pow(vars.h[2],2)));
 
 		output(initGrid,filename);
 	}
