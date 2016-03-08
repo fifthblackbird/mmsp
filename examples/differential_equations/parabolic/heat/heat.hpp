@@ -17,7 +17,8 @@ class coefficients {
 		vector<int> N;     // number of grid points in each direction
 		double rho;        // material density (constant)
 		double dt;         // timestep
-		double T0;         // minimum temperature
+		double noiseamp;   // amplitude of random initial noise
+		double initscale;  // scaling factor for initial condition (should be "not too close to 1")
 		vector<double> h;  // grid spacing
 		vector<double> Ax; // amplitudes in space
 		vector<double> At; // amplitudes in time
@@ -35,7 +36,7 @@ double MS_dkdT (const MMSP::vector<double>& Ck, const double& temp);
 double MS_Cp (const MMSP::vector<double>& Cc, const double& temp);
 
 // analytical expression for manufactured temperature profile
-double MS_T (const MMSP::vector<int>& xidx, double t, const double& T0,
+double MS_T (const MMSP::vector<int>& xidx, double t,
              const MMSP::vector<double>& h,  // grid spacing
              const MMSP::vector<double>& Ax, // spatial amplitudes
              const MMSP::vector<double>& At // temporal amplitudes
