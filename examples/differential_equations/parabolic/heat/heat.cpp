@@ -12,7 +12,7 @@ using std::cos;
 
 namespace MMSP{
 
-coefficients::coefficients() : // constructor
+coefficients::coefficients(int dim) : // constructor
 		// call initializing constructor on vector-valued members to enforce 3 spatial dimensions (otherwise, high risk of segfaulting)
 		N(3,0),    // grid points
 		h(3,0.0),  // spatial resolution
@@ -22,66 +22,68 @@ coefficients::coefficients() : // constructor
 		Cc(3,0.0)  // heat capacity polynomial coefficients
 {
 		// Set spatially-independent coefficients
-		dt = 0.01;
+		dt = 0.00001;   // timestep
+		T0 = 0.0;  // minimum temperature
 		rho = 1.0;   // What units?
-		At[3] = 1.0; // fourth dimension is time -- cannot be zero, unless you implement an iterative solver for steady-state
-		Ck[0] = 1.0;    Ck[1] = 1.0;    Ck[2] = 1.0;
-		Cc[0] = 1.0;    Cc[1] = 1.0;    Cc[2] = 1.0;
+		At[3] = 0.5; // fourth dimension is time -- cannot be zero, unless you implement an iterative solver for steady-state
+		Ck[0] = 0.1;    Ck[1] = 0.01;    Ck[2] = 0.001;
+		Cc[0] = 0.1;    Cc[1] = 0.01;    Cc[2] = 0.001;
 
 		// Set coeffients for each dimension. If a dimension does not exist, leave its value zero.
-		if (dim>0) { // x-axis
-			N[0]=1024;  h[0]=1.0/N[0];    Ax[0] = 1.0;    At[0] = 1.0;
-		}
-		if (dim>1) { // y-axis
-			N[0]=256;   h[0]=1.0/N[0];
-			N[1]=256;   h[1]=1.0/N[1];    Ax[1] = 1.0;    At[1] = 1.0;
-		}
-		if (dim>2) { // z-axis
-			N[0]=64;    h[0]=1.0/N[0];
-			N[1]=64;    h[1]=1.0/N[1];
-			N[2]=64;    h[2]=1.0/N[2];    Ax[2] = 1.0;    At[2] = 1.0;
+		if (dim==1) {
+			int L=512;
+			N[0]=L;      h[0]=1.0/N[0];    Ax[0] = 4.0*M_PI*h[0];    At[0] = M_PI/100;
+		} else if (dim==2) {
+			int L=128;
+			N[0]=2*L;    h[0]=1.0/N[0];    Ax[0] = 4.0*M_PI*h[0];    At[0] = M_PI/100;
+			N[1]=L;      h[1]=1.0/N[1];    Ax[1] = 2.0*M_PI*h[1];    At[1] = M_PI/100;
+		} else if (dim==3) {
+			int L=64;
+			N[0]=2*L;    h[0]=1.0/N[0];    Ax[0] = 4.0*M_PI*h[0];    At[0] = M_PI/100;
+			N[1]=L;      h[1]=1.0/N[1];    Ax[1] = 2.0*M_PI*h[1];    At[1] = M_PI/100;
+			N[2]=L/2;    h[2]=1.0/N[2];    Ax[2] =     M_PI*h[2];    At[2] = M_PI/100;
 		}
 }
 
 void generate(int dim, const char* filename)
 {
 	if (dim==1) {
-		coefficients<1> vars;
+		coefficients vars(1);
 		GRID1D initGrid(0,0,vars.N[0]);
 		dx(initGrid,0)=vars.h[0];
 
-		for (int i=0; i<nodes(initGrid); i++) {
+		for (int n=0; n<nodes(initGrid); n++) {
 			vector<int> x = MMSP::position(initGrid,n);
-			initGrid(n) = MS_T(x, 0, vars.h, vars.Ax, vars.At);
+			initGrid(n) = MS_T(x, 0, vars.T0, vars.h, vars.Ax, vars.At);
 		}
 
 		output(initGrid,filename);
 	}
 
 	if (dim==2) {
-		coefficients<2> vars;
+		coefficients vars(2);
 		GRID2D initGrid(0,0,vars.N[0],0,vars.N[1]);
 		dx(initGrid)=vars.h[0];
 		dy(initGrid)=vars.h[1];
 
-		for (int i=0; i<nodes(initGrid); i++) {
+		for (int n=0; n<nodes(initGrid); n++) {
 			vector<int> x = MMSP::position(initGrid,n);
-			initGrid(n) = MS_T(x, 0, vars.h, vars.Ax, vars.At);
+			initGrid(n) = MS_T(x, 0, vars.T0, vars.h, vars.Ax, vars.At);
 		}
 
 		output(initGrid,filename);
 	}
 
 	if (dim==3) {
-		coefficients<3> vars;
+		coefficients vars(3);
 		GRID3D initGrid(0,0,vars.N[0],0,vars.N[1],0,vars.N[2]);
 		dx(initGrid)=vars.h[0];
 		dy(initGrid)=vars.h[1];
 		dz(initGrid)=vars.h[2];
 
-		for (int i=0; i<nodes(initGrid); i++) {
+		for (int n=0; n<nodes(initGrid); n++) {
 			vector<int> x = MMSP::position(initGrid,n);
-			initGrid(n) = MS_T(x, 0, vars.h, vars.Ax, vars.At);
+			initGrid(n) = MS_T(x, 0, vars.T0, vars.h, vars.Ax, vars.At);
 		}
 
 		output(initGrid,filename);
@@ -96,7 +98,7 @@ template <int dim, typename T> void update(grid<dim,T>& oldGrid, int steps)
     #endif
     static double elapsed = 0.0;
 
-	coefficients<dim> vars;
+	coefficients vars(dim);
 
 	ghostswap(oldGrid);
 
@@ -104,22 +106,17 @@ template <int dim, typename T> void update(grid<dim,T>& oldGrid, int steps)
 
 	// March forward in time
 	for (int step=0; step<steps; step++) {
-		//if (rank==0)
-		//	print_progress(step, steps);
-		grid<dim,vector<T> > gradGrid(oldGrid,dim);
-		for (int n=0; n<nodes(oldGrid); n++) {
-			vector<int> x = position(oldGrid,n);
-			double kappa = MS_k(vars.Ck,oldGrid(n));
-			gradGrid(x) = kappa*gradient(oldGrid,x);
-		}
-
+		if (rank==0)
+			print_progress(step, steps);
 		for (int n=0; n<nodes(oldGrid); n++) {
 			vector<int> x = position(oldGrid,n);
 			T temp = oldGrid(n);
+			vector<T> gradT = gradient(oldGrid,x);
+			// div.k(grad T) = grad(k).grad(T) + k.lap(T) = k'.grad(T).grad(T) + k.lap(T)
+			double divkgradT = MS_dkdT(vars.Ck, temp)*(gradT*gradT) + MS_k(vars.Ck, temp)*laplacian(oldGrid, x);
 			double prefactor = vars.dt/(vars.rho * MS_Cp(vars.Cc, temp));
-			double divKgrad = divergence(gradGrid,x);
 			double source = MS_Q(x, elapsed, vars.rho, vars.h, vars.Ax, vars.At, vars.Ck, vars.Cc);
-			newGrid(x) = temp + prefactor*(divKgrad + Q);
+			newGrid(x) = temp + prefactor*(divkgradT + source);
 		}
 		swap(oldGrid,newGrid);
 		ghostswap(oldGrid);
@@ -129,18 +126,18 @@ template <int dim, typename T> void update(grid<dim,T>& oldGrid, int steps)
 
 	// Compute global error w.r.t. manufactured solution
 	double error = 0.0;
-	int npts = nodes(oldGrid);
-	for (int n=0; n<npts; n++) {
+	for (int n=0; n<nodes(oldGrid); n++) {
 		vector<int> x = position(oldGrid,n);
-		double analytical = MS_T(x, elapsed, vars.h, vars.Ax, vars.At);
+		double analytical = MS_T(x, elapsed, vars.T0, vars.h, vars.Ax, vars.At);
 		double numerical = oldGrid(n);
 		error += pow(numerical - analytical, 2.0);
 	}
+	double npts(nodes(oldGrid));
 	#ifdef MPI_VERSION
 	double myErr(error);
-	int myPts(npts);
+	double myPts(npts);
 	MPI::COMM_WORLD.Allreduce(&myErr,&error,1,MPI_DOUBLE,MPI_SUM);
-	MPI::COMM_WORLD.Allreduce(&myPts,&npts,1,MPI_INT,MPI_SUM);
+	MPI::COMM_WORLD.Allreduce(&myPts,&npts,1,MPI_DOUBLE,MPI_SUM);
 	#endif
 	error = sqrt(error/npts);
 	std::cout<<elapsed<<'\t'<<error<<std::endl;
@@ -148,149 +145,158 @@ template <int dim, typename T> void update(grid<dim,T>& oldGrid, int steps)
 }
 
 
-double MS_k (const vector<double>& Ck, double temp)
+} // namespace MMSP
+
+double MS_k (const MMSP::vector<double>& Ck, const double& temp)
 {
 	return Ck[0] + Ck[1]*temp + Ck[2]*temp*temp;
 }
 
-double MS_Cp (const vector<double>& Cc, double temp)
+double MS_dkdT (const MMSP::vector<double>& Ck, const double& temp)
+{
+	return Ck[1] + 2.0*Ck[2]*temp;
+}
+
+double MS_Cp (const MMSP::vector<double>& Cc, const double& temp)
 {
 	return Cc[0] + Cc[1]*temp + Cc[2]*temp*temp;
 }
 
-double MS_T (const vector<int>& xidx, double t, const vector<double>& h, const vector<double>& Ax, const vector<double>& At)
+double MS_T (const MMSP::vector<int>& xidx, double t, const double& T0,
+             const MMSP::vector<double>& h, const MMSP::vector<double>& Ax, const MMSP::vector<double>& At)
 {
 	// Analytical temperature
-	vector<double> x(3,0.0); // most general case is 3D, zero by default to handle 1D and 2D naturally
-	for (int d=0; d<xidx.size(); d++)
+	MMSP::vector<double> x(3,0.0); // most general case is 3D, zero by default to handle 1D and 2D naturally
+	for (int d=0; d<xidx.length(); d++)
 		x[d] = h[d]*xidx[d];
-	assert(Ax.size() == 3);
-	assert(At.size() == 4);
+	assert(Ax.length() == 3);
+	assert(At.length() == 4);
 	return (
-		cos(Ax[0] * x[0] + At[0] * t) * cos(Ax[1] * x[1] + At[1] * t) * cos(Ax[2] * x[2] + At[2] * t) * cos(At[3] * t)
+		T0 + cos(Ax[0]*x[0] + At[0]*t) * cos(Ax[1]*x[1] + At[1]*t) * cos(Ax[2]*x[2] + At[2]*t) * cos(At[3]*t)
 	);
 }
 
-vector<double> MS_GradT (const vector<int>& xidx, double t, const vector<double>& h, const vector<double>& Ax, const vector<double>& At)
+MMSP::vector<double> MS_GradT (const MMSP::vector<int>& xidx, double t,
+                               const MMSP::vector<double>& h, const MMSP::vector<double>& Ax, const MMSP::vector<double>& At)
 {
 	// Analytical temperature gradient
-	vector<double> x(3,0.0); // most general case is 3D, zero by default to handle 1D and 2D naturally
-	for (int d=0; d<xidx.size(); d++)
+	MMSP::vector<double> gradT_an(3,0.0);
+
+	MMSP::vector<double> x(3,0.0); // most general case is 3D, zero by default to handle 1D and 2D naturally
+	for (int d=0; d<xidx.length(); d++)
 		x[d] = h[d]*xidx[d];
-	assert(Ax.size() == 3);
-	assert(At.size() == 4);
-	gradT_an[0] = -Ax[0] * cos(At[3] * t) * cos(Ax[1] * x[1] + At[1] * t) * cos(Ax[2] * x[2] + At[2] * t) * sin(Ax[0] * x[0] + At[0] * t);
-	gradT_an[1] = -Ax[1] * cos(At[3] * t) * cos(Ax[0] * x[0] + At[0] * t) * cos(Ax[2] * x[2] + At[2] * t) * sin(Ax[1] * x[1] + At[1] * t);
-	gradT_an[2] = -Ax[2] * cos(At[3] * t) * cos(Ax[0] * x[0] + At[0] * t) * cos(Ax[1] * x[1] + At[1] * t) * sin(Ax[2] * x[2] + At[2] * t);
+	assert(Ax.length() == 3);
+	assert(At.length() == 4);
+	gradT_an[0] = -Ax[0] * cos(At[3]*t) * cos(Ax[1]*x[1] + At[1]*t) * cos(Ax[2]*x[2] + At[2]*t) * sin(Ax[0]*x[0] + At[0]*t);
+	gradT_an[1] = -Ax[1] * cos(At[3]*t) * cos(Ax[0]*x[0] + At[0]*t) * cos(Ax[2]*x[2] + At[2]*t) * sin(Ax[1]*x[1] + At[1]*t);
+	gradT_an[2] = -Ax[2] * cos(At[3]*t) * cos(Ax[0]*x[0] + At[0]*t) * cos(Ax[1]*x[1] + At[1]*t) * sin(Ax[2]*x[2] + At[2]*t);
 }
 
-double MS_Q (const vector<int>& xidx, double t, double rho, const vector<double>& h,
-             const vector<double>& Ax, const vector<double>& At,
-             const vector<double>& Ck, const vector<double>& Cc)
+double MS_Q (const MMSP::vector<int>& xidx, double t, double rho, const MMSP::vector<double>& h,
+             const MMSP::vector<double>& Ax, const MMSP::vector<double>& At,
+             const MMSP::vector<double>& Ck, const MMSP::vector<double>& Cc)
 {
-	vector<double> x(3,0.0); // most general case is 3D, zero by default to handle 1D and 2D naturally
-	for (int d=0; d<xidx.size(); d++)
+	MMSP::vector<double> x(3,0.0); // most general case is 3D, zero by default to handle 1D and 2D naturally
+	for (int d=0; d<xidx.length(); d++)
 		x[d] = h[d]*xidx[d];
-	assert(At.size() == 4);
-	assert(Ax.size() == 3);
-	assert(Ck.size() == 3);
-	assert(Cc.size() == 3);
+	assert(At.length() == 4);
+	assert(Ax.length() == 3);
+	assert(Ck.length() == 3);
+	assert(Cc.length() == 3);
 
 	// Define the thermal source term. Transformed for MMSP accessors and restructured for clarity and linewidth
 	// after https://github.com/manufactured-solutions/analytical/tree/master/heat_equation/C_code/
 	// For best results, generate this yourself using a symbolic math package, e.g. SymPy, Mathematica, or Maple.
 	// All this floating-point math in a single expression makes me nervous.
 	double Q_T = 0.0;
-	Q_T = - rho * Cc[0] * At[0] * sin(Ax[0] * x[0] + At[0] * t)
-	                            * cos(Ax[1] * x[1] + At[1] * t)
-	                            * cos(Ax[2] * x[2] + At[2] * t)
-	                            * cos(At[3] * t)
-	      - rho * Cc[0] * At[1] * cos(Ax[0] * x[0] + At[0] * t)
-	                            * sin(Ax[1] * x[1] + At[1] * t)
-	                            * cos(Ax[2] * x[2] + At[2] * t)
-	                            * cos(At[3] * t)
-	      - rho * Cc[0] * At[2] * cos(Ax[0] * x[0] + At[0] * t)
-	                            * cos(Ax[1] * x[1] + At[1] * t)
-	                            * sin(Ax[2] * x[2] + At[2] * t)
-	                            * cos(At[3] * t)
-	      - rho * Cc[0] * At[3] * cos(Ax[0] * x[0] + At[0] * t)
-	                            * cos(Ax[1] * x[1] + At[1] * t)
-	                            * cos(Ax[2] * x[2] + At[2] * t)
-	                            * sin(At[3] * t)
-	      - Ck[1] * Ax[0]*Ax[0] * pow(cos(Ax[1] * x[1] + At[1] * t), 2.0)
-	                           * pow(cos(Ax[2] * x[2] + At[2] * t), 2.0)
-	                           * pow(cos(At[3] * t), 2.0)
-	      - Ck[1] * Ax[1]*Ax[1] * pow(cos(Ax[0] * x[0] + At[0] * t), 2.0)
-	                           * pow(cos(Ax[2] * x[2] + At[2] * t), 2.0)
-	                           * pow(cos(At[3] * t), 2.0)
-	      - Ck[1] * Ax[2]*Ax[2] * pow(cos(Ax[0] * x[0] + At[0] * t), 2.0)
-	                           * pow(cos(Ax[1] * x[1] + At[1] * t), 2.0)
-	                           * pow(cos(At[3] * t), 2.0)
+	Q_T = - rho * Cc[0] * At[0] * sin(Ax[0]*x[0] + At[0]*t)
+	                            * cos(Ax[1]*x[1] + At[1]*t)
+	                            * cos(Ax[2]*x[2] + At[2]*t)
+	                            * cos(At[3]*t)
+	      - rho * Cc[0] * At[1] * cos(Ax[0]*x[0] + At[0]*t)
+	                            * sin(Ax[1]*x[1] + At[1]*t)
+	                            * cos(Ax[2]*x[2] + At[2]*t)
+	                            * cos(At[3]*t)
+	      - rho * Cc[0] * At[2] * cos(Ax[0]*x[0] + At[0]*t)
+	                            * cos(Ax[1]*x[1] + At[1]*t)
+	                            * sin(Ax[2]*x[2] + At[2]*t)
+	                            * cos(At[3]*t)
+	      - rho * Cc[0] * At[3] * cos(Ax[0]*x[0] + At[0]*t)
+	                            * cos(Ax[1]*x[1] + At[1]*t)
+	                            * cos(Ax[2]*x[2] + At[2]*t)
+	                            * sin(At[3]*t)
+	      - Ck[1] * Ax[0]*Ax[0] * pow(cos(Ax[1]*x[1] + At[1]*t), 2.0)
+	                           * pow(cos(Ax[2]*x[2] + At[2]*t), 2.0)
+	                           * pow(cos(At[3]*t), 2.0)
+	      - Ck[1] * Ax[1]*Ax[1] * pow(cos(Ax[0]*x[0] + At[0]*t), 2.0)
+	                           * pow(cos(Ax[2]*x[2] + At[2]*t), 2.0)
+	                           * pow(cos(At[3]*t), 2.0)
+	      - Ck[1] * Ax[2]*Ax[2] * pow(cos(Ax[0]*x[0] + At[0]*t), 2.0)
+	                           * pow(cos(Ax[1]*x[1] + At[1]*t), 2.0)
+	                           * pow(cos(At[3]*t), 2.0)
 	      + 3.0 * Ck[2] * ( Ax[0]*Ax[0] + Ax[1]*Ax[1] + Ax[2]*Ax[2] )
-	                   * pow(cos(Ax[0] * x[0] + At[0] * t), 3.0)
-	                   * pow(cos(Ax[1] * x[1] + At[1] * t), 3.0)
-	                   * pow(cos(Ax[2] * x[2] + At[2] * t), 3.0)
-	                   * pow(cos(At[3] * t), 3.0)
+	                   * pow(cos(Ax[0]*x[0] + At[0]*t), 3.0)
+	                   * pow(cos(Ax[1]*x[1] + At[1]*t), 3.0)
+	                   * pow(cos(Ax[2]*x[2] + At[2]*t), 3.0)
+	                   * pow(cos(At[3]*t), 3.0)
 	      + (
-	        - rho * Cc[1] * At[0] * sin(Ax[0] * x[0] + At[0] * t)
-	                              * cos(Ax[1] * x[1] + At[1] * t)
-	                              * cos(Ax[2] * x[2] + At[2] * t)
-	                              * cos(At[3] * t)
-	        - rho * Cc[1] * At[1] * cos(Ax[0] * x[0] + At[0] * t)
-	                              * sin(Ax[1] * x[1] + At[1] * t)
-	                              * cos(Ax[2] * x[2] + At[2] * t)
-	                              * cos(At[3] * t)
-	        - rho * Cc[1] * At[2] * cos(Ax[0] * x[0] + At[0] * t)
-	                              * cos(Ax[1] * x[1] + At[1] * t)
-	                              * sin(Ax[2] * x[2] + At[2] * t)
-	                              * cos(At[3] * t)
-	        - rho * Cc[1] * At[3] * cos(Ax[0] * x[0] + At[0] * t)
-	                              * cos(Ax[1] * x[1] + At[1] * t)
-	                              * cos(Ax[2] * x[2] + At[2] * t)
-	                              * sin(At[3] * t)
+	        - rho * Cc[1] * At[0] * sin(Ax[0]*x[0] + At[0]*t)
+	                              * cos(Ax[1]*x[1] + At[1]*t)
+	                              * cos(Ax[2]*x[2] + At[2]*t)
+	                              * cos(At[3]*t)
+	        - rho * Cc[1] * At[1] * cos(Ax[0]*x[0] + At[0]*t)
+	                              * sin(Ax[1]*x[1] + At[1]*t)
+	                              * cos(Ax[2]*x[2] + At[2]*t)
+	                              * cos(At[3]*t)
+	        - rho * Cc[1] * At[2] * cos(Ax[0]*x[0] + At[0]*t)
+	                              * cos(Ax[1]*x[1] + At[1]*t)
+	                              * sin(Ax[2]*x[2] + At[2]*t)
+	                              * cos(At[3]*t)
+	        - rho * Cc[1] * At[3] * cos(Ax[0]*x[0] + At[0]*t)
+	                              * cos(Ax[1]*x[1] + At[1]*t)
+	                              * cos(Ax[2]*x[2] + At[2]*t)
+	                              * sin(At[3]*t)
 	        + Ck[0] * Ax[0]*Ax[0] + Ck[0] * Ax[1]*Ax[1] + Ck[0] * Ax[2]*Ax[2]
-	        - 2.0 * Ck[2] * Ax[0]*Ax[0] * pow(cos(Ax[1] * x[1] + At[1] * t), 2.0)
-	                                     * pow(cos(Ax[2] * x[2] + At[2] * t), 2.0)
-	                                     * pow(cos(At[3] * t), 2.0)
-	        - 2.0 * Ck[2] * Ax[1]*Ax[1] * pow(cos(Ax[0] * x[0] + At[0] * t), 2.0)
-	                                     * pow(cos(Ax[2] * x[2] + At[2] * t), 2.0)
-	                                     * pow(cos(At[3] * t), 2.0)
-	        - 2.0 * Ck[2] * Ax[2]*Ax[2] * pow(cos(Ax[0] * x[0] + At[0] * t), 2.0)
-	                                     * pow(cos(Ax[1] * x[1] + At[1] * t), 2.0)
-	                                     * pow(cos(At[3] * t), 2.0)
-	        ) * cos(Ax[0] * x[0] + At[0] * t)
-	          * cos(Ax[1] * x[1] + At[1] * t)
-	          * cos(Ax[2] * x[2] + At[2] * t)
-	          * cos(At[3] * t)
+	        - 2.0 * Ck[2] * Ax[0]*Ax[0] * pow(cos(Ax[1]*x[1] + At[1]*t), 2.0)
+	                                     * pow(cos(Ax[2]*x[2] + At[2]*t), 2.0)
+	                                     * pow(cos(At[3]*t), 2.0)
+	        - 2.0 * Ck[2] * Ax[1]*Ax[1] * pow(cos(Ax[0]*x[0] + At[0]*t), 2.0)
+	                                     * pow(cos(Ax[2]*x[2] + At[2]*t), 2.0)
+	                                     * pow(cos(At[3]*t), 2.0)
+	        - 2.0 * Ck[2] * Ax[2]*Ax[2] * pow(cos(Ax[0]*x[0] + At[0]*t), 2.0)
+	                                     * pow(cos(Ax[1]*x[1] + At[1]*t), 2.0)
+	                                     * pow(cos(At[3]*t), 2.0)
+	        ) * cos(Ax[0]*x[0] + At[0]*t)
+	          * cos(Ax[1]*x[1] + At[1]*t)
+	          * cos(Ax[2]*x[2] + At[2]*t)
+	          * cos(At[3]*t)
 	      + (
-	        - rho * Cc[2] * At[0] * sin(Ax[0] * x[0] + At[0] * t)
-	                              * cos(Ax[1] * x[1] + At[1] * t)
-	                              * cos(Ax[2] * x[2] + At[2] * t)
-	                              * cos(At[3] * t)
-	        - rho * Cc[2] * At[1] * cos(Ax[0] * x[0] + At[0] * t)
-	                              * sin(Ax[1] * x[1] + At[1] * t)
-	                              * cos(Ax[2] * x[2] + At[2] * t)
-	                              * cos(At[3] * t)
-	        - rho * Cc[2] * At[2] * cos(Ax[0] * x[0] + At[0] * t)
-	                              * cos(Ax[1] * x[1] + At[1] * t)
-	                              * sin(Ax[2] * x[2] + At[2] * t)
-	                              * cos(At[3] * t)
-	        - rho * Cc[2] * At[3] * cos(Ax[0] * x[0] + At[0] * t)
-	                              * cos(Ax[1] * x[1] + At[1] * t)
-	                              * cos(Ax[2] * x[2] + At[2] * t)
-	                              * sin(At[3] * t)
+	        - rho * Cc[2] * At[0] * sin(Ax[0]*x[0] + At[0]*t)
+	                              * cos(Ax[1]*x[1] + At[1]*t)
+	                              * cos(Ax[2]*x[2] + At[2]*t)
+	                              * cos(At[3]*t)
+	        - rho * Cc[2] * At[1] * cos(Ax[0]*x[0] + At[0]*t)
+	                              * sin(Ax[1]*x[1] + At[1]*t)
+	                              * cos(Ax[2]*x[2] + At[2]*t)
+	                              * cos(At[3]*t)
+	        - rho * Cc[2] * At[2] * cos(Ax[0]*x[0] + At[0]*t)
+	                              * cos(Ax[1]*x[1] + At[1]*t)
+	                              * sin(Ax[2]*x[2] + At[2]*t)
+	                              * cos(At[3]*t)
+	        - rho * Cc[2] * At[3] * cos(Ax[0]*x[0] + At[0]*t)
+	                              * cos(Ax[1]*x[1] + At[1]*t)
+	                              * cos(Ax[2]*x[2] + At[2]*t)
+	                              * sin(At[3]*t)
 	        + 2.0 * Ck[1] * Ax[0]*Ax[0]
 	        + 2.0 * Ck[1] * Ax[1]*Ax[1]
 	        + 2.0 * Ck[1] * Ax[2]*Ax[2]
-	        ) * pow(cos(Ax[0] * x[0] + At[0] * t), 2.0)
-	          * pow(cos(Ax[1] * x[1] + At[1] * t), 2.0)
-	          * pow(cos(Ax[2] * x[2] + At[2] * t), 2.0)
-	          * pow(cos(At[3] * t), 2.0);
+	        ) * pow(cos(Ax[0]*x[0] + At[0]*t), 2.0)
+	          * pow(cos(Ax[1]*x[1] + At[1]*t), 2.0)
+	          * pow(cos(Ax[2]*x[2] + At[2]*t), 2.0)
+	          * pow(cos(At[3]*t), 2.0);
 
 	return Q_T;
 }
-
-} // namespace MMSP
 
 #endif
 
