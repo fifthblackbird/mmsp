@@ -22,8 +22,8 @@ coefficients::coefficients(int dim) : // constructor
 		Cc(3,0.0)  // heat capacity polynomial coefficients
 {
 		// Set spatially-independent coefficients
-		dt = 0.00001;   // timestep
-		T0 = 1.0;  // minimum temperature
+		dt = 0.0005;   // timestep
+		T0 = 0.0;  // minimum temperature
 		rho = 1.0;   // What units?
 		At[3] = 0.5; // fourth dimension is time -- cannot be zero, unless you implement an iterative solver for steady-state
 		Ck[0] = 0.1;    Ck[1] = 0.001;    Ck[2] = 0.0001;
@@ -32,21 +32,25 @@ coefficients::coefficients(int dim) : // constructor
 		// Set coeffients for each dimension. If a dimension does not exist, leave its value zero.
 		if (dim==1) {
 			int L=512;
-			N[0]=L;      h[0]=1.0/N[0];    Ax[0] = 4.0*M_PI;    At[0] = M_PI/(100.0*dt);
+			N[0]=L;      h[0]=1.0/N[0];    Ax[0] = 4.0*M_PI;    At[0] = M_PI*dt;
 		} else if (dim==2) {
 			int L=128;
-			N[0]=2*L;    h[0]=1.0/N[0];    Ax[0] = 4.0*M_PI;    At[0] = M_PI/(100.0*dt);
-			N[1]=L;      h[1]=1.0/N[1];    Ax[1] = 2.0*M_PI;    At[1] = M_PI/( 75.0*dt);
+			N[0]=2*L;    h[0]=1.0/N[0];    Ax[0] = 4.0*M_PI;    At[0] = M_PI*dt;
+			N[1]=L;      h[1]=1.0/N[1];    Ax[1] = 2.0*M_PI;    At[1] = M_PI*dt;
 		} else if (dim==3) {
 			int L=64;
-			N[0]=2*L;    h[0]=1.0/N[0];    Ax[0] = 4.0*M_PI;    At[0] = M_PI/(100.0*dt);
-			N[1]=L;      h[1]=1.0/N[1];    Ax[1] = 2.0*M_PI;    At[1] = M_PI/( 75.0*dt);
-			N[2]=L/2;    h[2]=1.0/N[2];    Ax[2] = 1.0*M_PI;    At[2] = M_PI/( 50.0*dt);
+			N[0]=2*L;    h[0]=1.0/N[0];    Ax[0] = 4.0*M_PI;    At[0] = M_PI*dt;
+			N[1]=L;      h[1]=1.0/N[1];    Ax[1] = 2.0*M_PI;    At[1] = M_PI*dt;
+			N[2]=L/2;    h[2]=1.0/N[2];    Ax[2] = 1.0*M_PI;    At[2] = M_PI*dt;
 		}
 }
 
 void generate(int dim, const char* filename)
 {
+	int rank=0;
+    #ifdef MPI_VERSION
+    rank = MPI::COMM_WORLD.Get_rank();
+    #endif
 	if (dim==1) {
 		coefficients vars(1);
 		GRID1D initGrid(0,0,vars.N[0]);
@@ -54,11 +58,12 @@ void generate(int dim, const char* filename)
 
 		for (int n=0; n<nodes(initGrid); n++) {
 			vector<int> x = MMSP::position(initGrid,n);
-			initGrid(n) = MS_T(x, 0, vars.T0, vars.h, vars.Ax, vars.At);
+			initGrid(n) = 1.625*MS_T(x, 0, vars.T0, vars.h, vars.Ax, vars.At);
 		}
 		double prefactor = (vars.dt * MS_k(vars.Ck, initGrid(nodes(initGrid)/2))) /
 		                   (2.0*vars.rho*MS_Cp(vars.Cc, initGrid(nodes(initGrid)/2)));
-		printf("CFL condition is %.2e\n",prefactor/pow(vars.h[0],2));
+		if (rank==0)
+			printf("CFL condition is %g. Take %d steps per unit time.\n",prefactor/pow(vars.h[0],2),int(1.0/vars.dt));
 
 		output(initGrid,filename);
 	}
@@ -71,11 +76,12 @@ void generate(int dim, const char* filename)
 
 		for (int n=0; n<nodes(initGrid); n++) {
 			vector<int> x = MMSP::position(initGrid,n);
-			initGrid(n) = MS_T(x, 0, vars.T0, vars.h, vars.Ax, vars.At);
+			initGrid(n) = 1.625*MS_T(x, 0, vars.T0, vars.h, vars.Ax, vars.At);
 		}
 		double prefactor = (vars.dt * MS_k(vars.Ck, initGrid(nodes(initGrid)/2))) /
 		                   (2.0*vars.rho*MS_Cp(vars.Cc, initGrid(nodes(initGrid)/2)));
-		printf("CFL condition is %.2e\n",prefactor*(1.0/pow(vars.h[0],2)+1.0/pow(vars.h[1],2)));
+		if (rank==0)
+			printf("CFL condition is %g. Take %d steps per unit time.\n",prefactor*(1.0/pow(vars.h[0],2)+1.0/pow(vars.h[1],2)),int(1.0/vars.dt));
 
 		output(initGrid,filename);
 	}
@@ -89,11 +95,12 @@ void generate(int dim, const char* filename)
 
 		for (int n=0; n<nodes(initGrid); n++) {
 			vector<int> x = MMSP::position(initGrid,n);
-			initGrid(n) = MS_T(x, 0, vars.T0, vars.h, vars.Ax, vars.At);
+			initGrid(n) = 1.625*MS_T(x, 0, vars.T0, vars.h, vars.Ax, vars.At);
 		}
 		double prefactor = (vars.dt * MS_k(vars.Ck, initGrid(nodes(initGrid)/2)))/
 		                   (2.0*vars.rho*MS_Cp(vars.Cc, initGrid(nodes(initGrid)/2)));
-		printf("CFL condition is %.2e\n",prefactor*(1.0/pow(vars.h[0],2)+1.0/pow(vars.h[1],2)+1.0/pow(vars.h[2],2)));
+		if (rank==0)
+			printf("CFL condition is %g. Take %d steps per unit time.\n",prefactor*(1.0/pow(vars.h[0],2)+1.0/pow(vars.h[1],2)+1.0/pow(vars.h[2],2)),int(1.0/vars.dt));
 
 		output(initGrid,filename);
 	}
@@ -117,6 +124,9 @@ template <int dim, typename T> void update(grid<dim,T>& oldGrid, int steps)
 	for (int step=0; step<steps; step++) {
 		if (rank==0)
 			print_progress(step, steps);
+
+		elapsed += vars.dt;
+
 		for (int n=0; n<nodes(oldGrid); n++) {
 			vector<int> x = position(oldGrid,n);
 			T temp = oldGrid(n);
@@ -125,13 +135,21 @@ template <int dim, typename T> void update(grid<dim,T>& oldGrid, int steps)
 			double divkgradT = MS_dkdT(vars.Ck, temp)*(gradT*gradT) + MS_k(vars.Ck, temp)*laplacian(oldGrid, x);
 			double prefactor = vars.dt/(vars.rho * MS_Cp(vars.Cc, temp));
 			double source = MS_Q(x, elapsed, vars.rho, vars.h, vars.Ax, vars.At, vars.Ck, vars.Cc);
-			newGrid(x) = temp + prefactor*(divkgradT + source);
+			newGrid(n) = temp + prefactor*(divkgradT + source);
 		}
 		swap(oldGrid,newGrid);
 		ghostswap(oldGrid);
 	}
 
-	elapsed += vars.dt;
+	/*
+	// Just look at the analytical solution
+	for (int n=0; n<nodes(oldGrid); n++) {
+		vector<int> x = position(oldGrid,n);
+		newGrid(n) = MS_T(x, elapsed, vars.T0, vars.h, vars.Ax, vars.At);
+	}
+	swap(oldGrid,newGrid);
+	ghostswap(oldGrid);
+	*/
 
 	// Compute global error w.r.t. manufactured solution
 	double error = 0.0;
@@ -149,7 +167,8 @@ template <int dim, typename T> void update(grid<dim,T>& oldGrid, int steps)
 	MPI::COMM_WORLD.Allreduce(&myPts,&npts,1,MPI_DOUBLE,MPI_SUM);
 	#endif
 	error = sqrt(error/npts);
-	std::cout<<elapsed<<'\t'<<error<<std::endl;
+	if (rank==0)
+		std::cout<<elapsed<<'\t'<<error<<std::endl;
 
 }
 
