@@ -25,13 +25,13 @@ coefficients::coefficients(int dim) : // constructor
 
 		// Set spatially-independent coefficients
 		T0 = 1.0;
-		dt = 0.0001;   // timestep
+		dt = 0.000005;   // timestep
 		noiseamp = 0.25;  // amplitude of random noise
 		initscale = 1.625; // scaling factor for initial condition (should be "not too close to 1")
 		rho = 1.0;
 		At[3] = 3*M_PI/2.0; // fourth dimension is time -- cannot be zero, unless you implement an iterative solver for steady-state
-		Ck[0] = 10.0;    Ck[1] = 1.0;    Ck[2] = 0.01;
-		Cc[0] = 10.0;    Cc[1] = 2.0;    Cc[2] = 0.03;
+		Ck[0] = 10.0;    //Ck[1] = 1.0;    Ck[2] = 0.01;
+		Cc[0] = 10.0;    //Cc[1] = 2.0;    Cc[2] = 0.03;
 
 		// Set coeffients for each dimension. If a dimension does not exist, leave its value zero.
 		if (dim==1) {
@@ -137,30 +137,27 @@ template <int dim, typename T> void update(grid<dim,T>& oldGrid, int steps)
 	if (rank==0 && elapsed<vars.dt)
 		std::cout<<"time\terror\n";
 
-	if (0) { // analytical solution
-	//if (1) { // numerical solution
-		// March forward in time
+	bool numerical=true;
+	if (numerical) { // numerical solution
 		for (int step=0; step<steps; step++) {
-			//if (rank==0)
-			//	print_progress(step, steps);
-
+			// March forward in time
 			elapsed += vars.dt;
 
 			for (int n=0; n<nodes(oldGrid); n++) {
 				vector<int> x = position(oldGrid,n);
 				T temp = oldGrid(n);
 				vector<T> gradT = gradient(oldGrid,x);
-				// div.k(grad T) = grad(k).grad(T) + k.lap(T) = k'.grad(T).grad(T) + k.lap(T)
+				// div.k(grad T) = grad(k).grad(T) + k.lap(T) = k'.grad(T).grad(T) + k.laplacian(T)
 				double divkgradT = MS_dkdT(vars.Ck, temp)*(gradT*gradT) + MS_k(vars.Ck, temp)*laplacian(oldGrid, x);
 				double prefactor = vars.dt/(vars.rho * MS_Cp(vars.Cc, temp));
-				double source = MS_Q(x, elapsed, vars.T0, vars.rho, vars.h, vars.Ax, vars.At, vars.Ck, vars.Cc);
+				double source = MS_Q<dim>(x, elapsed, vars.T0, vars.rho, vars.h, vars.Ax, vars.At, vars.Ck, vars.Cc);
 				newGrid(n) = temp + prefactor*(divkgradT + source);
 			}
 			swap(oldGrid,newGrid);
 			ghostswap(oldGrid);
 		}
-	} else {
-		// Just look at the analytical solution
+	} else { // analytical solution
+		// Jump forward in time
 		elapsed += steps*vars.dt;
 		for (int n=0; n<nodes(oldGrid); n++) {
 			vector<int> x = position(oldGrid,n);
@@ -209,7 +206,7 @@ double MS_Cp (const MMSP::vector<double>& Cc, const double& temp)
 	return Cc[0] + Cc[1]*temp + Cc[2]*temp*temp;
 }
 
-double MS_T (const MMSP::vector<int>& xidx, double t, const double& T0,
+double MS_T (const MMSP::vector<int>& xidx, const double& t, const double& T0,
              const MMSP::vector<double>& h, const MMSP::vector<double>& Ax, const MMSP::vector<double>& At)
 {
 	// Analytical temperature
@@ -223,7 +220,70 @@ double MS_T (const MMSP::vector<int>& xidx, double t, const double& T0,
 	);
 }
 
-double MS_Q (const MMSP::vector<int>& xidx, double t, const double& T0, double rho, const MMSP::vector<double>& h,
+template<>
+double MS_Q<1>(const MMSP::vector<int>& xidx, const double& t, const double& T0, const double& rho, const MMSP::vector<double>& h,
+             const MMSP::vector<double>& Ax, const MMSP::vector<double>& At,
+             const MMSP::vector<double>& Ck, const MMSP::vector<double>& Cc)
+{
+	MMSP::vector<double> x(3,0.0); // most general case is 3D, zero by default to handle 1D and 2D naturally
+	for (int d=0; d<xidx.length(); d++)
+		x[d] = h[d]*xidx[d];
+	assert(At.length() == 4);
+	assert(Ax.length() == 3);
+	assert(Ck.length() == 3);
+	assert(Cc.length() == 3);
+
+	// Define the thermal source term. Transformed for MMSP accessors and restructured for clarity and linewidth
+	// after https://github.com/manufactured-solutions/analytical/tree/master/heat_equation/C_code/
+	// For best results, generate this yourself using a symbolic math package, e.g. SymPy, Mathematica, or Maple.
+	// All this floating-point math in a single expression makes me nervous.
+	double Q_T = 0.0;
+	Q_T = T0*(pow(Ax[0],2)*cos(At[3]*t)*cos(At[0]*t + Ax[0]*x[0])*(Ck[0] + Ck[1]*T0*(1 + cos(At[3]*t)*cos(At[0]*t + Ax[0]*x[0])) + 
+        Ck[2]*pow(T0 + T0*cos(At[3]*t)*cos(At[0]*t + Ax[0]*x[0]),2)) - 
+     pow(Ax[0],2)*T0*pow(cos(At[3]*t),2)*(Ck[1] + 2*Ck[2]*T0 + Ck[2]*T0*cos(At[0]*t - At[3]*t + Ax[0]*x[0]) + Ck[2]*T0*cos(At[0]*t + At[3]*t + Ax[0]*x[0]))*
+      pow(sin(At[0]*t + Ax[0]*x[0]),2) + rho*(Cc[0] + Cc[1]*T0*(1 + cos(At[3]*t)*cos(At[0]*t + Ax[0]*x[0])) + 
+        Cc[2]*pow(T0 + T0*cos(At[3]*t)*cos(At[0]*t + Ax[0]*x[0]),2))*
+      (-(At[3]*cos(At[0]*t + Ax[0]*x[0])*sin(At[3]*t)) - At[0]*cos(At[3]*t)*sin(At[0]*t + Ax[0]*x[0])));
+	return Q_T;
+}
+
+template<>
+double MS_Q<2>(const MMSP::vector<int>& xidx, const double& t, const double& T0, const double& rho, const MMSP::vector<double>& h,
+             const MMSP::vector<double>& Ax, const MMSP::vector<double>& At,
+             const MMSP::vector<double>& Ck, const MMSP::vector<double>& Cc)
+{
+	MMSP::vector<double> x(3,0.0); // most general case is 3D, zero by default to handle 1D and 2D naturally
+	for (int d=0; d<xidx.length(); d++)
+		x[d] = h[d]*xidx[d];
+	assert(At.length() == 4);
+	assert(Ax.length() == 3);
+	assert(Ck.length() == 3);
+	assert(Cc.length() == 3);
+
+	// Define the thermal source term. Transformed for MMSP accessors and restructured for clarity and linewidth
+	// after https://github.com/manufactured-solutions/analytical/tree/master/heat_equation/C_code/
+	// For best results, generate this yourself using a symbolic math package, e.g. SymPy, Mathematica, or Maple.
+	// All this floating-point math in a single expression makes me nervous.
+	double Q_T = 0.0;
+	Q_T = T0*(pow(Ax[0],2)*cos(At[3]*t)*cos(At[0]*t + Ax[0]*x[0])*cos(At[1]*t + Ax[1]*x[1])*
+      (Ck[0] + Ck[1]*T0*(1 + cos(At[3]*t)*cos(At[0]*t + Ax[0]*x[0])*cos(At[1]*t + Ax[1]*x[1])) + 
+        Ck[2]*pow(T0 + T0*cos(At[3]*t)*cos(At[0]*t + Ax[0]*x[0])*cos(At[1]*t + Ax[1]*x[1]),2)) + 
+     pow(Ax[1],2)*cos(At[3]*t)*cos(At[0]*t + Ax[0]*x[0])*cos(At[1]*t + Ax[1]*x[1])*
+      (Ck[0] + Ck[1]*T0*(1 + cos(At[3]*t)*cos(At[0]*t + Ax[0]*x[0])*cos(At[1]*t + Ax[1]*x[1])) + 
+        Ck[2]*pow(T0 + T0*cos(At[3]*t)*cos(At[0]*t + Ax[0]*x[0])*cos(At[1]*t + Ax[1]*x[1]),2)) - 
+     pow(Ax[0],2)*T0*pow(cos(At[3]*t),2)*pow(cos(At[1]*t + Ax[1]*x[1]),2)*
+      (Ck[1] + 2*Ck[2]*T0 + 2*Ck[2]*T0*cos(At[3]*t)*cos(At[0]*t + Ax[0]*x[0])*cos(At[1]*t + Ax[1]*x[1]))*pow(sin(At[0]*t + Ax[0]*x[0]),2) - 
+     pow(Ax[1],2)*T0*pow(cos(At[3]*t),2)*pow(cos(At[0]*t + Ax[0]*x[0]),2)*
+      (Ck[1] + 2*Ck[2]*T0 + 2*Ck[2]*T0*cos(At[3]*t)*cos(At[0]*t + Ax[0]*x[0])*cos(At[1]*t + Ax[1]*x[1]))*pow(sin(At[1]*t + Ax[1]*x[1]),2) + 
+     rho*(Cc[0] + Cc[1]*T0*(1 + cos(At[3]*t)*cos(At[0]*t + Ax[0]*x[0])*cos(At[1]*t + Ax[1]*x[1])) + 
+        Cc[2]*pow(T0 + T0*cos(At[3]*t)*cos(At[0]*t + Ax[0]*x[0])*cos(At[1]*t + Ax[1]*x[1]),2))*
+      (-(At[0]*cos(At[3]*t)*cos(At[1]*t + Ax[1]*x[1])*sin(At[0]*t + Ax[0]*x[0])) - 
+        cos(At[0]*t + Ax[0]*x[0])*(At[3]*cos(At[1]*t + Ax[1]*x[1])*sin(At[3]*t) + At[1]*cos(At[3]*t)*sin(At[1]*t + Ax[1]*x[1]))));
+	return Q_T;
+}
+
+template<>
+double MS_Q<3>(const MMSP::vector<int>& xidx, const double& t, const double& T0, const double& rho, const MMSP::vector<double>& h,
              const MMSP::vector<double>& Ax, const MMSP::vector<double>& At,
              const MMSP::vector<double>& Ck, const MMSP::vector<double>& Cc)
 {
