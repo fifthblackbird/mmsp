@@ -15,6 +15,7 @@ class coefficients {
 	public:
 		coefficients(int dim); // constructor -- takes only grid dimension as an argument
 		vector<int> N;     // number of grid points in each direction
+		double T0;         // minimum temperature
 		double rho;        // material density (constant)
 		double dt;         // timestep
 		double noiseamp;   // amplitude of random initial noise
@@ -36,14 +37,14 @@ double MS_dkdT (const MMSP::vector<double>& Ck, const double& temp);
 double MS_Cp (const MMSP::vector<double>& Cc, const double& temp);
 
 // analytical expression for manufactured temperature profile
-double MS_T (const MMSP::vector<int>& xidx, double t,
+double MS_T (const MMSP::vector<int>& xidx, double t, const double& T0,
              const MMSP::vector<double>& h,  // grid spacing
              const MMSP::vector<double>& Ax, // spatial amplitudes
              const MMSP::vector<double>& At // temporal amplitudes
 );
 
 // analytical expression for manufactured thermal source
-double MS_Q (const MMSP::vector<int>& xidx, double t, double rho,
+double MS_Q (const MMSP::vector<int>& xidx, double t, double rho, const double& T0,
              const MMSP::vector<double>& h,  // grid spacing
              const MMSP::vector<double>& Ax, // spatial amplitudes
              const MMSP::vector<double>& At, // temporal amplitudes
