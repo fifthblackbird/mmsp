@@ -26,10 +26,10 @@ coefficients::coefficients(int dim) : // constructor
 		// Set spatially-independent coefficients
 		T0 = 1.0;
 		dt = 0.000005;   // timestep
-		noiseamp = 0.25;  // amplitude of random noise
+		noiseamp = 0.1;  // amplitude of random noise
 		initscale = 1.625; // scaling factor for initial condition (should be "not too close to 1")
 		rho = 1.0;
-		At[3] = 3*M_PI/2.0; // fourth dimension is time -- cannot be zero, unless you implement an iterative solver for steady-state
+		At[3] = 3.0*M_PI/2.0; // fourth dimension is time -- cannot be zero, unless you implement an iterative solver for steady-state
 		Ck[0] = 10.0;    //Ck[1] = 1.0;    Ck[2] = 0.01;
 		Cc[0] = 10.0;    //Cc[1] = 2.0;    Cc[2] = 0.03;
 
@@ -70,7 +70,7 @@ void generate(int dim, const char* filename)
 
 		for (int n=0; n<nodes(initGrid); n++) {
 			vector<int> x = MMSP::position(initGrid,n);
-			double noise = vars.noiseamp*double(rand()-(RAND_MAX/2))/RAND_MAX;
+			double noise = vars.noiseamp*double(rand())/RAND_MAX;
 			initGrid(n) = vars.initscale*MS_T(x, 0, vars.T0, vars.h, vars.Ax, vars.At) + noise;
 		}
 		double prefactor = (vars.dt * MS_k(vars.Ck, initGrid(nodes(initGrid)/2))) /
@@ -89,7 +89,7 @@ void generate(int dim, const char* filename)
 
 		for (int n=0; n<nodes(initGrid); n++) {
 			vector<int> x = MMSP::position(initGrid,n);
-			double noise = vars.noiseamp*double(rand()-(RAND_MAX/2))/RAND_MAX;
+			double noise = vars.noiseamp*double(rand())/RAND_MAX;
 			initGrid(n) = vars.initscale*MS_T(x, 0, vars.T0, vars.h, vars.Ax, vars.At) + noise;
 		}
 		double prefactor = (vars.dt * MS_k(vars.Ck, initGrid(nodes(initGrid)/2))) /
@@ -109,7 +109,7 @@ void generate(int dim, const char* filename)
 
 		for (int n=0; n<nodes(initGrid); n++) {
 			vector<int> x = MMSP::position(initGrid,n);
-			double noise = vars.noiseamp*double(rand()-(RAND_MAX/2))/RAND_MAX;
+			double noise = vars.noiseamp*double(rand())/RAND_MAX;
 			initGrid(n) = vars.initscale*MS_T(x, 0, vars.T0, vars.h, vars.Ax, vars.At) + noise;
 		}
 		double prefactor = (vars.dt * MS_k(vars.Ck, initGrid(nodes(initGrid)/2)))/
