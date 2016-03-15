@@ -21,8 +21,8 @@ class coefficients {
 		double noiseamp;   // amplitude of random initial noise
 		double initscale;  // scaling factor for initial condition (should be "not too close to 1")
 		vector<double> h;  // grid spacing
-		vector<double> Ax; // amplitudes in space
-		vector<double> At; // amplitudes in time
+		vector<double> AX; // amplitudes in space
+		vector<double> AT; // amplitudes in time
 		vector<double> Ck; // polynomial coefficients for thermal conductivity
 		vector<double> Cc; // polynomial coefficients for heat capacity
 };
@@ -39,16 +39,16 @@ double MS_Cp (const MMSP::vector<double>& Cc, const double& temp);
 // analytical expression for manufactured temperature profile
 double MS_T (const MMSP::vector<int>& xidx, const double& t, const double& T0,
              const MMSP::vector<double>& h,  // grid spacing
-             const MMSP::vector<double>& Ax, // spatial amplitudes
-             const MMSP::vector<double>& At // temporal amplitudes
+             const MMSP::vector<double>& AX, // spatial amplitudes
+             const MMSP::vector<double>& AT // temporal amplitudes
 );
 
 // analytical expression for manufactured thermal source
 template <int dim>
 double MS_Q (const MMSP::vector<int>& xidx, const double& t, const double& T0, const double& rho,
              const MMSP::vector<double>& h,  // grid spacing
-             const MMSP::vector<double>& Ax, // spatial amplitudes
-             const MMSP::vector<double>& At, // temporal amplitudes
+             const MMSP::vector<double>& AX, // spatial amplitudes
+             const MMSP::vector<double>& AT, // temporal amplitudes
              const MMSP::vector<double>& Ck, // thermal diffusivity polynomial coefficients
              const MMSP::vector<double>& Cc  // heat capacity polynomial coefficients
 );
@@ -56,7 +56,7 @@ double MS_Q (const MMSP::vector<int>& xidx, const double& t, const double& T0, c
 // analytical expression for gradient of manufactured temperature profile
 MMSP::vector<double> MS_GradT (const MMSP::vector<int>& xidx, double t,
                          const MMSP::vector<double>& h,  // grid spacing
-                         const MMSP::vector<double>& Ax, // spatial amplitudes
-                         const MMSP::vector<double>& At // temporal amplitudes
+                         const MMSP::vector<double>& AX, // spatial amplitudes
+                         const MMSP::vector<double>& AT // temporal amplitudes
 );
 
