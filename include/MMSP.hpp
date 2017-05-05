@@ -6,6 +6,8 @@
 
 #include"MMSP.scalar.h"
 
+#include"MMSP.complex.hpp"
+
 #include"MMSP.vector.h"
 
 #include"MMSP.sparse.h"

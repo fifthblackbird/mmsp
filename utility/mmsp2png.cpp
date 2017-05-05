@@ -20,7 +20,16 @@ template <int dim, typename T> void convert_scalars(const MMSP::grid<dim,T>& GRI
                                                     const int& mode, int sliceaxis, int slicelevel, const double& zoomin, const double& zoomax, const bool coninv,
                                                     const std::set<double>& levelset, const int& lvlfield, const double& contol, const unsigned int& bufsize, unsigned char* buffer);
 
+template <int dim, typename T> void convert_complex(const MMSP::grid<dim,MMSP::complex<T> >& GRID,
+                                                    const int& mode, int sliceaxis, int slicelevel, const double& zoomin, const double& zoomax, const bool coninv,
+                                                    const std::set<double>& levelset, const int& lvlfield, const double& contol, const unsigned int& bufsize, unsigned char* buffer);
+
 template <int dim, typename T> void convert_vectors(const MMSP::grid<dim,MMSP::vector<T> >& GRID,
+                                                    const int& mode, int sliceaxis, int slicelevel, const double& zoomin, const double& zoomax, const bool coninv,
+                                                    const std::set<double>& levelset, const int& lvlfield, const double& contol, const std::set<int>& fieldset,
+                                                    const unsigned int& bufsize, unsigned char* buffer);
+
+template <int dim, typename T> void convert_complex_vectors(const MMSP::grid<dim,MMSP::vector<MMSP::complex<T> > >& GRID,
                                                     const int& mode, int sliceaxis, int slicelevel, const double& zoomin, const double& zoomax, const bool coninv,
                                                     const std::set<double>& levelset, const int& lvlfield, const double& contol, const std::set<int>& fieldset,
                                                     const unsigned int& bufsize, unsigned char* buffer);
@@ -266,6 +275,7 @@ int main(int argc, char* argv[])
 	bool long_double_type = (type.find("long double") != std::string::npos);
 
 	bool scalar_type = (type.find("scalar") != std::string::npos);
+	bool complex_type = (type.find("complex") != std::string::npos);
 	bool vector_type = (type.find("vector") != std::string::npos);
 	bool sparse_type = (type.find("sparse") != std::string::npos);
 
@@ -321,7 +331,7 @@ int main(int argc, char* argv[])
 	unsigned char* buffer = new unsigned char[theSize];
 
 		// write grid data
-		if (scalar_type or (not vector_type and not sparse_type)) { // must be scalar or built-in
+		if (scalar_type or (not complex_type and not vector_type and not sparse_type)) { // must be scalar or built-in
 			if (bool_type) {
 				if (dim == 1) {
 					MMSP::grid<1,bool> GRID(argv[datindex]);
@@ -464,6 +474,20 @@ int main(int argc, char* argv[])
 				} else if (dim == 3) {
 					MMSP::grid<3,double> GRID(argv[datindex]);
 					convert_scalars(GRID, mode, sliceaxis, slicelevel, zoomin, zoomax, coninv, levelset, lvlfield, contol, theSize, buffer);
+				}
+			}
+		}
+		else if (vector_type and complex_type) {
+			if (double_type) {
+				if (dim == 1) {
+					MMSP::grid<1,MMSP::vector<MMSP::complex<double> > > GRID(argv[datindex]);
+					convert_complex_vectors(GRID, mode, sliceaxis, slicelevel, zoomin, zoomax, coninv, levelset, lvlfield, contol, fieldset, theSize, buffer);
+				} else if (dim == 2) {
+					MMSP::grid<2,MMSP::vector<MMSP::complex<double> > > GRID(argv[datindex]);
+					convert_complex_vectors(GRID, mode, sliceaxis, slicelevel, zoomin, zoomax, coninv, levelset, lvlfield, contol, fieldset, theSize, buffer);
+				} else if (dim == 3) {
+					MMSP::grid<3,MMSP::vector<MMSP::complex<double> > > GRID(argv[datindex]);
+					convert_complex_vectors(GRID, mode, sliceaxis, slicelevel, zoomin, zoomax, coninv, levelset, lvlfield, contol, fieldset, theSize, buffer);
 				}
 			}
 		}
@@ -760,6 +784,152 @@ int main(int argc, char* argv[])
 				}
 			}
 		}
+		else if (complex_type) {
+			if (bool_type) {
+				if (dim == 1) {
+					MMSP::grid<1,MMSP::complex<bool> > GRID(argv[datindex]);
+					convert_complex(GRID, mode, sliceaxis, slicelevel, zoomin, zoomax, coninv, levelset, lvlfield, contol, theSize, buffer);
+				} else if (dim == 2) {
+					MMSP::grid<2,MMSP::complex<bool> > GRID(argv[datindex]);
+					convert_complex(GRID, mode, sliceaxis, slicelevel, zoomin, zoomax, coninv, levelset, lvlfield, contol, theSize, buffer);
+				} else if (dim == 3) {
+					MMSP::grid<3,MMSP::complex<bool> > GRID(argv[datindex]);
+					convert_complex(GRID, mode, sliceaxis, slicelevel, zoomin, zoomax, coninv, levelset, lvlfield, contol, theSize, buffer);
+				}
+			}
+			else if (unsigned_char_type) {
+				if (dim == 1) {
+					MMSP::grid<1,MMSP::complex<unsigned char> > GRID(argv[datindex]);
+					convert_complex(GRID, mode, sliceaxis, slicelevel, zoomin, zoomax, coninv, levelset, lvlfield, contol, theSize, buffer);
+				} else if (dim == 2) {
+					MMSP::grid<2,MMSP::complex<unsigned char> > GRID(argv[datindex]);
+					convert_complex(GRID, mode, sliceaxis, slicelevel, zoomin, zoomax, coninv, levelset, lvlfield, contol, theSize, buffer);
+				} else if (dim == 3) {
+					MMSP::grid<3,MMSP::complex<unsigned char> > GRID(argv[datindex]);
+					convert_complex(GRID, mode, sliceaxis, slicelevel, zoomin, zoomax, coninv, levelset, lvlfield, contol, theSize, buffer);
+				}
+			}
+			else if (char_type) {
+				if (dim == 1) {
+					MMSP::grid<1,MMSP::complex<char> > GRID(argv[datindex]);
+					convert_complex(GRID, mode, sliceaxis, slicelevel, zoomin, zoomax, coninv, levelset, lvlfield, contol, theSize, buffer);
+				} else if (dim == 2) {
+					MMSP::grid<2,MMSP::complex<char> > GRID(argv[datindex]);
+					convert_complex(GRID, mode, sliceaxis, slicelevel, zoomin, zoomax, coninv, levelset, lvlfield, contol, theSize, buffer);
+				} else if (dim == 3) {
+					MMSP::grid<3,MMSP::complex<char> > GRID(argv[datindex]);
+					convert_complex(GRID, mode, sliceaxis, slicelevel, zoomin, zoomax, coninv, levelset, lvlfield, contol, theSize, buffer);
+				}
+			}
+			else if (unsigned_int_type) {
+				if (dim == 1) {
+					MMSP::grid<1,MMSP::complex<unsigned int> > GRID(argv[datindex]);
+					convert_complex(GRID, mode, sliceaxis, slicelevel, zoomin, zoomax, coninv, levelset, lvlfield, contol, theSize, buffer);
+				} else if (dim == 2) {
+					MMSP::grid<2,MMSP::complex<unsigned int> > GRID(argv[datindex]);
+					convert_complex(GRID, mode, sliceaxis, slicelevel, zoomin, zoomax, coninv, levelset, lvlfield, contol, theSize, buffer);
+				} else if (dim == 3) {
+					MMSP::grid<3,MMSP::complex<unsigned int> > GRID(argv[datindex]);
+					convert_complex(GRID, mode, sliceaxis, slicelevel, zoomin, zoomax, coninv, levelset, lvlfield, contol, theSize, buffer);
+				}
+			}
+			else if (int_type) {
+				if (dim == 1) {
+					MMSP::grid<1,MMSP::complex<int> > GRID(argv[datindex]);
+					convert_complex(GRID, mode, sliceaxis, slicelevel, zoomin, zoomax, coninv, levelset, lvlfield, contol, theSize, buffer);
+				} else if (dim == 2) {
+					MMSP::grid<2,MMSP::complex<int> > GRID(argv[datindex]);
+					convert_complex(GRID, mode, sliceaxis, slicelevel, zoomin, zoomax, coninv, levelset, lvlfield, contol, theSize, buffer);
+				} else if (dim == 3) {
+					MMSP::grid<3,MMSP::complex<int> > GRID(argv[datindex]);
+					convert_complex(GRID, mode, sliceaxis, slicelevel, zoomin, zoomax, coninv, levelset, lvlfield, contol, theSize, buffer);
+				}
+			}
+			else if (unsigned_long_type) {
+				if (dim == 1) {
+					MMSP::grid<1,MMSP::complex<unsigned long> > GRID(argv[datindex]);
+					convert_complex(GRID, mode, sliceaxis, slicelevel, zoomin, zoomax, coninv, levelset, lvlfield, contol, theSize, buffer);
+				} else if (dim == 2) {
+					MMSP::grid<2,MMSP::complex<unsigned long> > GRID(argv[datindex]);
+					convert_complex(GRID, mode, sliceaxis, slicelevel, zoomin, zoomax, coninv, levelset, lvlfield, contol, theSize, buffer);
+				} else if (dim == 3) {
+					MMSP::grid<3,MMSP::complex<unsigned long> > GRID(argv[datindex]);
+					convert_complex(GRID, mode, sliceaxis, slicelevel, zoomin, zoomax, coninv, levelset, lvlfield, contol, theSize, buffer);
+				}
+			}
+			else if (long_type) {
+				if (dim == 1) {
+					MMSP::grid<1,MMSP::complex<long> > GRID(argv[datindex]);
+					convert_complex(GRID, mode, sliceaxis, slicelevel, zoomin, zoomax, coninv, levelset, lvlfield, contol, theSize, buffer);
+				} else if (dim == 2) {
+					MMSP::grid<2,MMSP::complex<long> > GRID(argv[datindex]);
+					convert_complex(GRID, mode, sliceaxis, slicelevel, zoomin, zoomax, coninv, levelset, lvlfield, contol, theSize, buffer);
+				} else if (dim == 3) {
+					MMSP::grid<3,MMSP::complex<long> > GRID(argv[datindex]);
+					convert_complex(GRID, mode, sliceaxis, slicelevel, zoomin, zoomax, coninv, levelset, lvlfield, contol, theSize, buffer);
+				}
+			}
+			else if (unsigned_short_type) {
+				if (dim == 1) {
+					MMSP::grid<1,MMSP::complex<unsigned short> > GRID(argv[datindex]);
+					convert_complex(GRID, mode, sliceaxis, slicelevel, zoomin, zoomax, coninv, levelset, lvlfield, contol, theSize, buffer);
+				} else if (dim == 2) {
+					MMSP::grid<2,MMSP::complex<unsigned short> > GRID(argv[datindex]);
+					convert_complex(GRID, mode, sliceaxis, slicelevel, zoomin, zoomax, coninv, levelset, lvlfield, contol, theSize, buffer);
+				} else if (dim == 3) {
+					MMSP::grid<3,MMSP::complex<unsigned short> > GRID(argv[datindex]);
+					convert_complex(GRID, mode, sliceaxis, slicelevel, zoomin, zoomax, coninv, levelset, lvlfield, contol, theSize, buffer);
+				}
+			}
+			else if (short_type) {
+				if (dim == 1) {
+					MMSP::grid<1,MMSP::complex<short> > GRID(argv[datindex]);
+					convert_complex(GRID, mode, sliceaxis, slicelevel, zoomin, zoomax, coninv, levelset, lvlfield, contol, theSize, buffer);
+				} else if (dim == 2) {
+					MMSP::grid<2,MMSP::complex<short> > GRID(argv[datindex]);
+					convert_complex(GRID, mode, sliceaxis, slicelevel, zoomin, zoomax, coninv, levelset, lvlfield, contol, theSize, buffer);
+				} else if (dim == 3) {
+					MMSP::grid<3,MMSP::complex<short> > GRID(argv[datindex]);
+					convert_complex(GRID, mode, sliceaxis, slicelevel, zoomin, zoomax, coninv, levelset, lvlfield, contol, theSize, buffer);
+				}
+			}
+			else if (float_type) {
+				if (dim == 1) {
+					MMSP::grid<1,MMSP::complex<float> > GRID(argv[datindex]);
+					convert_complex(GRID, mode, sliceaxis, slicelevel, zoomin, zoomax, coninv, levelset, lvlfield, contol, theSize, buffer);
+				} else if (dim == 2) {
+					MMSP::grid<2,MMSP::complex<float> > GRID(argv[datindex]);
+					convert_complex(GRID, mode, sliceaxis, slicelevel, zoomin, zoomax, coninv, levelset, lvlfield, contol, theSize, buffer);
+				} else if (dim == 3) {
+					MMSP::grid<3,MMSP::complex<float> > GRID(argv[datindex]);
+					convert_complex(GRID, mode, sliceaxis, slicelevel, zoomin, zoomax, coninv, levelset, lvlfield, contol, theSize, buffer);
+				}
+			}
+			else if (long_double_type) {
+				if (dim == 1) {
+					MMSP::grid<1,MMSP::complex<long double> > GRID(argv[datindex]);
+					convert_complex(GRID, mode, sliceaxis, slicelevel, zoomin, zoomax, coninv, levelset, lvlfield, contol, theSize, buffer);
+				} else if (dim == 2) {
+					MMSP::grid<2,MMSP::complex<long double> > GRID(argv[datindex]);
+					convert_complex(GRID, mode, sliceaxis, slicelevel, zoomin, zoomax, coninv, levelset, lvlfield, contol, theSize, buffer);
+				} else if (dim == 3) {
+					MMSP::grid<3,MMSP::complex<long double> > GRID(argv[datindex]);
+					convert_complex(GRID, mode, sliceaxis, slicelevel, zoomin, zoomax, coninv, levelset, lvlfield, contol, theSize, buffer);
+				}
+			}
+			else if (double_type) {
+				if (dim == 1) {
+					MMSP::grid<1,MMSP::complex<double> > GRID(argv[datindex]);
+					convert_complex(GRID, mode, sliceaxis, slicelevel, zoomin, zoomax, coninv, levelset, lvlfield, contol, theSize, buffer);
+				} else if (dim == 2) {
+					MMSP::grid<2,MMSP::complex<double> > GRID(argv[datindex]);
+					convert_complex(GRID, mode, sliceaxis, slicelevel, zoomin, zoomax, coninv, levelset, lvlfield, contol, theSize, buffer);
+				} else if (dim == 3) {
+					MMSP::grid<3,MMSP::complex<double> > GRID(argv[datindex]);
+					convert_complex(GRID, mode, sliceaxis, slicelevel, zoomin, zoomax, coninv, levelset, lvlfield, contol, theSize, buffer);
+				}
+			}
+		}
 
 	if (invert)
 		for (unsigned int n=0; n<theSize; n++)
@@ -907,6 +1077,78 @@ template <int dim, typename T> void convert_scalars(const MMSP::grid<dim,T>& GRI
 					if (x[sliceaxis]!=slicelevel) // clumsy, but effective
 						continue;
 					T val = GRID(x);
+					if (mode==1) //mag
+						val = std::abs(val);
+					assert(n<bufsize);
+					buffer[n] = 255*((val-min)/(max-min));
+					if (levelset.size()>0) //contour
+						for (std::set<double>::iterator it=levelset.begin(); it!=levelset.end(); it++)
+							if (std::fabs(val-*it)/std::fabs(*it)<contol)
+								buffer[n] = coninv ? 255 : 0;
+					n++;
+				}
+	}
+}
+
+template <int dim, typename T> void convert_complex(const MMSP::grid<dim,MMSP::complex<T> >& GRID,
+                                                    const int& mode, int sliceaxis, int slicelevel, const double& zoomin, const double& zoomax, const bool coninv,
+                                                    const std::set<double>& levelset, const int& lvlfield, const double& contol, const unsigned int& bufsize, unsigned char* buffer)
+{
+	double min=zoomin;
+	double max=zoomax;
+
+	for (int n=0; n<MMSP::nodes(GRID); n++) {
+		double val = GRID(n).norm();
+		if (mode==1) // mag
+			val = std::abs(val);
+		if (val>max)
+			max=val;
+		else if (val<min)
+			min=val;
+	}
+
+	std::cout<<"Rescaling on ["<<min<<','<<max<<"]."<<std::endl;
+
+	if (dim==1) {
+		unsigned int n=0;
+		MMSP::vector<int> x(1,0);
+		for (x[0] = MMSP::g0(GRID,0); x[0] < MMSP::g1(GRID,0); x[0]++) {
+			double val = GRID(x).norm();
+			if (mode==1) //mag
+				val = std::abs(val);
+			assert(n<bufsize);
+			buffer[n] = 255*((val-min)/(max-min));
+			if (mode==4) //contour
+				for (std::set<double>::iterator it=levelset.begin(); it!=levelset.end(); it++)
+					if (std::fabs(val-*it)/std::fabs(*it)<contol)
+						buffer[n] = 255-buffer[n];
+			n++;
+		}
+	} else if (dim==2) {
+		unsigned int n=0;
+		MMSP::vector<int> x(2,0);
+		for (x[1] = MMSP::g1(GRID,1)-1; x[1] >= MMSP::g0(GRID,1); x[1]--)
+			for (x[0] = MMSP::g0(GRID,0); x[0] < MMSP::g1(GRID,0); x[0]++) {
+				double val = GRID(x).norm();
+				if (mode==1) //mag
+					val = std::abs(val);
+				assert(n<bufsize);
+				buffer[n] = 255*((val-min)/(max-min));
+				if (mode==4) //contour
+					for (std::set<double>::iterator it=levelset.begin(); it!=levelset.end(); it++)
+						if (std::fabs(val-*it)/std::fabs(*it)<contol)
+							buffer[n] = 255-buffer[n];
+				n++;
+			}
+	} else if (dim==3) {
+		unsigned int n=0;
+		MMSP::vector<int> x(3,0);
+		for (x[2] = MMSP::g0(GRID,2); x[2] < MMSP::g1(GRID,2); x[2]++)
+			for (x[1] = MMSP::g1(GRID,1)-1; x[1] >= MMSP::g0(GRID,1); x[1]--)
+				for (x[0] = MMSP::g0(GRID,0); x[0] < MMSP::g1(GRID,0); x[0]++) {
+					if (x[sliceaxis]!=slicelevel) // clumsy, but effective
+						continue;
+					double val = GRID(x).norm();
 					if (mode==1) //mag
 						val = std::abs(val);
 					assert(n<bufsize);
@@ -1096,6 +1338,188 @@ template <int dim, typename T> void convert_vectors(const MMSP::grid<dim,MMSP::v
 					if (levelset.size()>0) // --contour
 						for (std::set<double>::iterator itl=levelset.begin(); itl!=levelset.end(); itl++)
 							if (std::fabs(GRID(x)[lvlfield]-*itl)/std::fabs(*itl)<contol)
+								buffer[n] = coninv ? 255 : 0;
+					n++;
+				}
+	}
+}
+
+template <int dim, typename T> void convert_complex_vectors(const MMSP::grid<dim,MMSP::vector<MMSP::complex<T> > >& GRID,
+                                                    const int& mode, int sliceaxis, int slicelevel, const double& zoomin, const double& zoomax, const bool coninv,
+                                                    const std::set<double>& levelset, const int& lvlfield, const double& contol, const std::set<int>& fieldset,
+                                                    const unsigned int& bufsize, unsigned char* buffer)
+{
+	double min=zoomin;
+	double max=zoomax;
+	int included = (mode==2) ? fieldset.size() : MMSP::fields(GRID)-fieldset.size();
+
+	for (int n=0; n<MMSP::nodes(GRID); n++) {
+		double sum=0.0;
+		if (mode==0) {        //  no option specified
+			for (int i=0; i<MMSP::fields(GRID); i++)
+				if (included>1)
+					sum += pow(GRID(n)[i].norm(),2.0);
+				else
+					sum = GRID(n)[i].norm();
+		} else if (mode==1) { //  --mag
+			for (int i=0; i<MMSP::fields(GRID); i++)
+				sum += pow(GRID(n)[i].norm(),2.0);
+		} else if (mode==2) { //  --field
+			if (included>1)
+				for (std::set<int>::iterator it=fieldset.begin(); it!=fieldset.end(); it++)
+					sum += pow(GRID(n)[*it].norm(),2.0);
+			else
+				sum = GRID(n)[*fieldset.begin()].norm();
+		} else if (mode==3) { //  --exclude
+			for (int i=0; i<MMSP::fields(GRID); i++) {
+				std::set<int>::iterator it=fieldset.find(i);
+				if (it == fieldset.end()) {
+					if (included>1)
+						sum += pow(GRID(n)[i].norm(),2.0);
+					else
+						sum = GRID(n)[i].norm();
+				}
+			}
+		}
+		if (mode==1 || included!=1)
+			sum = std::sqrt(sum);
+		if (sum>max)
+			max=sum;
+		else if (sum<min)
+			min=sum;
+	}
+
+	std::cout<<"Rescaling on ["<<min<<','<<max<<"]."<<std::endl;
+
+	if (dim==1) {
+		unsigned int n=0;
+		MMSP::vector<int> x(1,0);
+		for (x[0] = MMSP::g0(GRID,0); x[0] < MMSP::g1(GRID,0); x[0]++) {
+			double sum=0.0;
+			if (mode==0) { //         default selection
+				for (int i=0; i<MMSP::fields(GRID); i++) {
+					if (included>1)
+						sum += pow(GRID(x)[i].norm(),2.0);
+					else
+						sum = GRID(x)[i].norm();
+				}
+			} else if (mode==1) { //  --mag
+				for (int i=0; i<MMSP::fields(GRID); i++)
+					sum += pow(GRID(x)[i].norm(),2.0);
+			} else if (mode==2) { //  --field
+				if (fieldset.size()==1)
+					sum = GRID(x)[*fieldset.begin()].norm();
+				else
+					for (std::set<int>::iterator it=fieldset.begin(); it!=fieldset.end(); it++)
+						sum += pow(GRID(x)[*it].norm(),2.0);
+			} else if (mode==3) { //  --exclude
+				for (int i=0; i<MMSP::fields(GRID); i++) {
+					std::set<int>::iterator it=fieldset.find(i);
+					if (it == fieldset.end()) {
+						if (included>1)
+							sum += pow(GRID(x)[i].norm(),2.0);
+						else
+							sum = GRID(x)[i].norm();
+					}
+				}
+			}
+			if (mode==1 || included!=1)
+				sum = std::sqrt(sum);
+			assert(n<bufsize);
+			buffer[n] = 255*((sum-min)/(max-min));
+			if (levelset.size()>0) // --contour
+				for (std::set<double>::iterator itl=levelset.begin(); itl!=levelset.end(); itl++)
+					if (std::fabs(GRID(x)[lvlfield].norm()-*itl)/std::fabs(*itl)<contol)
+						buffer[n] = coninv ? 255 : 0;
+			n++;
+		}
+	} else if (dim==2) {
+		unsigned int n=0;
+		MMSP::vector<int> x(2,0);
+		for (x[1] = MMSP::g1(GRID,1)-1; x[1] >= MMSP::g0(GRID,1); x[1]--)
+			for (x[0] = MMSP::g0(GRID,0); x[0] < MMSP::g1(GRID,0); x[0]++) {
+				double sum=0.0;
+				if (mode==0) { //         default selection
+					for (int i=0; i<MMSP::fields(GRID); i++) {
+						if (included>1)
+							sum += pow(GRID(x)[i].norm(),2.0);
+						else
+							sum = GRID(x)[i].norm();
+					}
+				} else if (mode==1) { //  --mag
+					for (int i=0; i<MMSP::fields(GRID); i++)
+						sum += pow(GRID(x)[i].norm(),2.0);
+				} else if (mode==2) { //  --field
+					if (fieldset.size()==1) {
+						sum = GRID(x)[*fieldset.begin()].norm();
+					} else {
+						for (std::set<int>::iterator it=fieldset.begin(); it!=fieldset.end(); it++)
+							sum += pow(GRID(x)[*it].norm(),2.0);
+					}
+				} else if (mode==3) { //  --exclude
+					for (int i=0; i<MMSP::fields(GRID); i++) {
+						std::set<int>::iterator it=fieldset.find(i);
+						if (it == fieldset.end()) {
+							if (included>1)
+								sum += pow(GRID(x)[i].norm(),2.0);
+							else
+								sum = GRID(x)[i].norm();
+						}
+					}
+				}
+				if (mode==1 || included!=1)
+					sum = std::sqrt(sum);
+				assert(n<bufsize);
+				buffer[n] = 255*((sum-min)/(max-min));
+				if (levelset.size()>0) // --contour
+					for (std::set<double>::iterator itl=levelset.begin(); itl!=levelset.end(); itl++)
+						if (std::fabs(GRID(x)[lvlfield].norm()-*itl)/std::fabs(*itl)<contol)
+							buffer[n] = coninv ? 255 : 0;
+				n++;
+			}
+	} else if (dim==3) {
+		unsigned int n=0;
+		MMSP::vector<int> x(3,0);
+		for (x[2] = MMSP::g0(GRID,2); x[2] < MMSP::g1(GRID,2); x[2]++)
+			for (x[1] = MMSP::g1(GRID,1)-1; x[1] >= MMSP::g0(GRID,1); x[1]--)
+				for (x[0] = MMSP::g0(GRID,0); x[0] < MMSP::g1(GRID,0); x[0]++) {
+					if (x[sliceaxis]!=slicelevel) // clumsy, but effective
+						continue;
+					double sum=0.0;
+					if (mode==0) { //         default selection
+						for (int i=0; i<MMSP::fields(GRID); i++) {
+							if (included>1)
+								sum += pow(GRID(x)[i].norm(),2.0);
+							else
+								sum = GRID(x)[i].norm();
+						}
+					} else if (mode==1) { //  --mag
+						for (int i=0; i<MMSP::fields(GRID); i++)
+							sum += pow(GRID(x)[i].norm(),2.0);
+					} else if (mode==2) { //  --field
+						if (fieldset.size()==1)
+							sum = GRID(x)[*fieldset.begin()].norm();
+						else
+							for (std::set<int>::iterator it=fieldset.begin(); it!=fieldset.end(); it++)
+								sum += pow(GRID(x)[*it].norm(),2.0);
+					} else if (mode==3) { //  --exclude
+						for (int i=0; i<MMSP::fields(GRID); i++) {
+							std::set<int>::iterator it=fieldset.find(i);
+							if (it == fieldset.end()) {
+								if (included>1)
+									sum += pow(GRID(x)[i].norm(),2.0);
+								else
+									sum = GRID(x)[i].norm();
+							}
+						}
+					}
+					if (mode==1 || included!=1)
+						sum = std::sqrt(sum);
+					assert(n<bufsize);
+					buffer[n] = 255*((sum-min)/(max-min));
+					if (levelset.size()>0) // --contour
+						for (std::set<double>::iterator itl=levelset.begin(); itl!=levelset.end(); itl++)
+							if (std::fabs(GRID(x)[lvlfield].norm()-*itl)/std::fabs(*itl)<contol)
 								buffer[n] = coninv ? 255 : 0;
 					n++;
 				}

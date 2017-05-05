@@ -1,0 +1,37 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath,amssymb,siunitx}
+\usepackage[letterpaper,top=1.25in,bottom=1.25in,left=1in,right=1in]{geometry}
+
+\title{Complex Amplitude Model for Swift-Hohenberg Equation}
+\author{Trevor Keller and Nana Ofori-Opoku}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+This example applies the Newell-Whitehead-Segel amplitude equation,
+which can be considered as a complex generalization of the Swift-Hohenberg equation.
+The model includes three complex amplitude fields $\{A\}$ with three lattice vectors $\{\vec{k}\}$.
+
+The system represented in MMSP using a grid of vectors of complex scalars.
+The initial condition sets a seed of radius $r=10\Delta x$ at the center,
+with initial values of $(\num{0.35 + 0i}, \num{0.35 + 0i}, \num{0.35 + 0i})$
+inside the seed and $(\num{0 + 0i}, \num{0 + 0i}, \num{0 + 0i})$ outside.
+The mesh resolution $\Delta x=\Delta y=\frac{\pi}{2}$.
+
+The equations of motion are then
+\begin{align}
+	\frac{\partial A_i}{\partial t} &= -\left[- \epsilon A_i
+	                                         + \gamma |A_i|^2 A_i
+	                                         + \left(\nabla^2 + \num{2i}\hat{k}_i\cdot\vec{\nabla}\right)^2 A_i\right]\\
+	                                &= \left(\epsilon - \gamma |A_i|^2\right) A_i
+	                                 - \left(\nabla^2 + \num{2i}\hat{k}_i\cdot\vec{\nabla}\right)^2 A_i.	                                         
+\end{align}
+The equation is solved using $\gamma = 1$, $\epsilon = 0.5$, $\vec{k}_1 = \left(\frac{ \sqrt{3}}{2}, -\frac{1}{2}\right)$,
+                                                             $\vec{k}_2 = \left(0, 1\right)$,
+                                                             $\vec{k}_3 = \left(\frac{-\sqrt{3}}{2}, -\frac{1}{2}\right)$,
+                                                             and $\Delta t = \num{e-4}$.
+$|A_i|$ denotes the norm or complex modulus of $A_i$.
+The operator $\left(\nabla^2 + \num{2i}\hat{k}_i\cdot\vec{\nabla}\right)^2$ is split into
+two applications of $\left(\nabla^2 + \num{2i}\hat{k}_i\cdot\vec{\nabla}\right)$ using an intermediate grid.
+\end{document}

@@ -1,0 +1,14 @@
+This directory contains MMSP code for phase field crystal simulation of solidification.
+
+Send questions or comments to trevor.keller@gmail.com (Trevor Keller)
+
+References:
+
+1. RJ Deissler and HR Brand, Two-dimensional localized solutions for subcritical bifurcations in systems with broken rotational symmetry,
+   Physical Review E 51;2 (1995) R852--R855. DOI: 10.1103/PhysRevE.51.R852
+
+2. DJB Lloyd, B Sandstede, D Avitabile, AR Champneys, Localized Hexagon Patterns of the Planar Swift-Hohenberg Equation,
+   SIAM Journal of Applied Dynamical Systems 7;3 (2008) 1049--1100. DOI: 10.1137/070707622
+
+3. EP Zemskov, Turing patterns and Newell-Whitehead-Segel amplitude equation,
+   Physics-Uspekhi 57;10 (2014) 1035--1037. DOI: 10.3367/UFNe.0184.201410j.1149
