@@ -10,13 +10,14 @@ compiler = g++
 pcompiler = mpic++
 flags = -g -O2 -I $(incdir)
 pflags = $(flags) -include mpi.h
+links = -lz -fopenmp
 
 # the program
 swift-hohenberg: swift-hohenberg.cpp
-	$(compiler) $(flags) $< -o $@ -lz
+	$(compiler) $(flags) $< -o $@ $(links)
 
 parallel: swift-hohenberg.cpp
-	$(pcompiler) $(pflags) $< -o $@ -lz
+	$(pcompiler) $(pflags) $< -o $@ $(links)
 
 clean:
 	rm -f swift-hohenberg parallel

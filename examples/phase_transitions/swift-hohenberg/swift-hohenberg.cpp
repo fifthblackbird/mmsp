@@ -29,6 +29,7 @@ void generate(int dim, const char* filename)
 	const complex<double> solid(0.35, 0.0);
 	const complex<double> liquid(0.0, 0.0);
 	const double meshres[NF] = {M_PI/2, M_PI/2, M_PI/2};
+	const double R = 20.0 * meshres[0];
 
 	// Before using it for science, let's make sure our complex class obeys the identities.
 	if (1) {
@@ -92,7 +93,7 @@ void generate(int dim, const char* filename)
 
 		for (int n=0; n<nodes(initGrid); n++) {
 			vector<int> x = position(initGrid, n);
-			initGrid(n) = (radius<1>(origin, x, meshres[0])<10*meshres[0]) ? solid : liquid;
+			initGrid(n) = (radius<1>(origin, x, meshres[0])<R) ? solid : liquid;
 		}
 
 		output(initGrid,filename);
@@ -107,7 +108,7 @@ void generate(int dim, const char* filename)
 
 		for (int n=0; n<nodes(initGrid); n++) {
 			vector<int> x = position(initGrid, n);
-			initGrid(n) = (radius<2>(origin, x, meshres[0], meshres[1])<10*meshres[0]) ? solid : liquid;
+			initGrid(n) = (radius<2>(origin, x, meshres[0], meshres[1])<R) ? solid : liquid;
 		}
 
 		output(initGrid,filename);
@@ -122,7 +123,7 @@ void generate(int dim, const char* filename)
 
 		for (int n=0; n<nodes(initGrid); n++) {
 			vector<int> x = position(initGrid, n);
-			initGrid(n) = (radius<3>(origin, x, meshres[0], meshres[1], meshres[2])<10*meshres[0]) ? solid : liquid;
+			initGrid(n) = (radius<3>(origin, x, meshres[0], meshres[1], meshres[2])<R) ? solid : liquid;
 		}
 
 		output(initGrid,filename);
@@ -141,14 +142,14 @@ vector<complex<T> > covariantGradient(const grid<dim,vector<complex<T> >  > & GR
 	// MMSP knows about vectors, but not matrices, so we have to transpose it manually.
 	const complex<T> blank_c(0.0, 0.0);
 	const vector<complex<T> > blank_v(dim, blank_c);
-	vector<vector<complex<T> > > gradTranspose(fields(GRID), blank_v);
+	vector<vector<complex<T> > > gradTranspose(NF, blank_v);
 	for (int d=0; d<dim; d++)
-		for (int i=0; i<fields(GRID); i++)
+		for (int i=0; i<NF; i++)
 			gradTranspose[i][d] = grad[d][i];
 
 	const complex<T> coeff(0.0, 2.0);
 
-	for (int i=0; i<fields(GRID); i++) {
+	for (int i=0; i<NF; i++) {
 		lap[i] += coeff * (gradTranspose[i] * k[i]);
 	}
 
@@ -170,9 +171,11 @@ void update(grid<dim,vector<complex<T> > >& oldGrid, int steps)
 	grid<dim,vector<complex<T> > > newGrid(oldGrid);
 	grid<dim,vector<complex<T> > > tempGrid(oldGrid);
 
-	const T dt = 1e-2;
+	const T dt = 5e-4;
 	const T gam = 1.0;
-	const complex<T> eps(0.5, 0.0);
+	const T beta = 1.0;
+	const T eps = 0.125;
+	const vector<T> M(NF, 1.0);
 
 	// Populate k with reals expressed in complex form
 	complex<T> r0i0(0.0, 0.0);
@@ -189,21 +192,43 @@ void update(grid<dim,vector<complex<T> > >& oldGrid, int steps)
 		if (rank==0)
 			print_progress(step, steps);
 
+		#pragma omp parallel for
 		for (int n=0; n<nodes(oldGrid); n++) {
 			vector<int> x = position(oldGrid, n); // index of this mesh point
 			tempGrid(n) = covariantGradient(oldGrid, x, k);
 		}
 		ghostswap(tempGrid);
 
+		#pragma omp parallel for
 		for (int n=0; n<nodes(oldGrid); n++) {
 			vector<int> x = position(oldGrid, n); // index of this mesh point
 			const vector<complex<T> >& oldGridN = oldGrid(n);
 			vector<complex<T> >& newGridN = newGrid(n);
 			const vector<complex<T> > lap = covariantGradient(tempGrid, x, k);
 
-			for (int i=0; i<fields(oldGrid); i++) {
+			/*
+			// Un-Coupled EOM
+			for (int i=0; i<NF; i++) {
 				const complex<T>& A = oldGridN[i];
 				newGridN[i] = A + dt * (eps - (gam*A.norm()*A.norm())*A - lap[i]);
+			}
+			*/
+
+			// Store sum of norms-squared
+			T allNormSq = 0.0;
+			for (int i=0; i<NF; i++)
+				allNormSq += std::pow(oldGridN[i].norm(), 2);
+
+			// Store pairwise conjugates
+			vector<complex<T> > conjugates(NF, r0i0);
+			conjugates[0] = oldGridN[1].conj() * oldGridN[2].conj();
+			conjugates[1] = oldGridN[0].conj() * oldGridN[2].conj();
+			conjugates[2] = oldGridN[0].conj() * oldGridN[1].conj();
+
+			for (int i=0; i<NF; i++) {
+				const complex<T>& A = oldGridN[i];
+				const T normSq = std::pow(A.norm(), 2);
+				newGridN[i] = A - dt * M[i] * (eps*A + 2.0*beta*conjugates[i] + 3.0*(2.0 * allNormSq - normSq) * A + lap[i]);
 			}
 		}
 

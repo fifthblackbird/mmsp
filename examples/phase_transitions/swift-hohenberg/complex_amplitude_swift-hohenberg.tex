@@ -19,6 +19,8 @@ with initial values of $(\num{0.35 + 0i}, \num{0.35 + 0i}, \num{0.35 + 0i})$
 inside the seed and $(\num{0 + 0i}, \num{0 + 0i}, \num{0 + 0i})$ outside.
 The mesh resolution $\Delta x=\Delta y=\frac{\pi}{2}$.
 
+\section{Uncoupled Equations}
+
 The equations of motion are then
 \begin{align}
 	\frac{\partial A_i}{\partial t} &= -\left[- \epsilon A_i
@@ -34,4 +36,16 @@ The equation is solved using $\gamma = 1$, $\epsilon = 0.5$, $\vec{k}_1 = \left(
 $|A_i|$ denotes the norm or complex modulus of $A_i$.
 The operator $\left(\nabla^2 + \num{2i}\hat{k}_i\cdot\vec{\nabla}\right)^2$ is split into
 two applications of $\left(\nabla^2 + \num{2i}\hat{k}_i\cdot\vec{\nabla}\right)$ using an intermediate grid.
+
+\section{Coupled Equations}
+
+The equations of motion are then
+\begin{align}
+	\frac{\partial A_i}{\partial t} &= -\left[- \epsilon A_i
+	                                         + \gamma |A_i|^2 A_i
+	                                         + \left(\nabla^2 + \num{2i}\hat{k}_i\cdot\vec{\nabla}\right)^2 A_i\right]\\
+	                                &= \left(\epsilon - \gamma |A_i|^2\right) A_i
+	                                 - \left(\nabla^2 + \num{2i}\hat{k}_i\cdot\vec{\nabla}\right)^2 A_i.	                                         
+\end{align}
+
 \end{document}

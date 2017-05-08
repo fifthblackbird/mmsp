@@ -83,6 +83,9 @@ public:
 	double norm() const {
 		return std::norm(data);
 	}
+	complex conj() const {
+		return complex(std::conj(data));
+	}
 	int length() const {
 		return 1;
 	}
