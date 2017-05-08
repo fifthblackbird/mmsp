@@ -2131,7 +2131,7 @@ template <int dim, typename T> sparse<T> laplacian(const grid<dim, sparse<T> >& 
 	return laplacian(GRID, x);
 }
 
-template <int dim, typename T> MMSP::vector<T> gradient(const grid<dim, T>& GRID, const vector<int>& x)
+template <int dim, typename T> vector<T> gradient(const grid<dim, T>& GRID, const vector<int>& x)
 {
 	vector<T> gradient(dim);
 	vector<int> s = x;

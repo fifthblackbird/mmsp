@@ -8,7 +8,7 @@ incdir = ../../../include
 # compilers/flags
 compiler = g++
 pcompiler = mpic++
-flags = -g -O2 -I $(incdir)
+flags = -g -O2 -Wall -I $(incdir)
 pflags = $(flags) -include mpi.h
 links = -lz -fopenmp
 

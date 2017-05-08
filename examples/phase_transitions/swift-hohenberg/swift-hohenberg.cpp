@@ -20,7 +20,7 @@ double radius(const vector<int> & P, const vector<int> & Q, const double dx, con
 {
 	int diffsq = 0;
 	for (int d=0; d<dim; d++)
-		diffsq += std::pow(Q[d] - P[d], 2);
+		diffsq += (Q[d] - P[d]) * (Q[d] - P[d]);
 	return std::sqrt(dx * diffsq);
 }
 
@@ -29,66 +29,18 @@ void generate(int dim, const char* filename)
 	const complex<double> solid(0.35, 0.0);
 	const complex<double> liquid(0.0, 0.0);
 	const double meshres[NF] = {M_PI/2, M_PI/2, M_PI/2};
-	const double R = 20.0 * meshres[0];
-
-	// Before using it for science, let's make sure our complex class obeys the identities.
-	if (1) {
-		// Equality
-		const complex<double> a( 0.5, -0.5);
-		const complex<double> b( 0.5, -0.5);
-		assert(a==b);
-	}
-	if (1) {
-		// Addition
-		const complex<double> a( 0.5, -0.5);
-		const complex<double> b( 1.0, -1.0);
-		const complex<double> c( 1.5, -1.5);
-		assert(a+b == c);
-
-		complex<double> d(a);
-		d += b;
-		assert(d == c);
-	}
-	if (1) {
-		// Subtraction
-		const complex<double> a( 0.5, -0.5);
-		const complex<double> b( 1.0, -1.0);
-		const complex<double> c(-0.5, 0.5);
-		assert(a-b == c);
-
-		complex<double> d(a);
-		d -= b;
-		assert(d == c);
-	}
-	if (1) {
-		// Multiplication
-		const complex<int> a( 2, -4);
-		const complex<int> b( 3,  5);
-		const complex<int> c(26, -2);
-		assert(a*b == c);
-
-		complex<int> d(a);
-		d *= b;
-		assert(d == c);
-	}
-	if (1) {
-		// Division
-		const complex<int> a( 40, -20);
-		const complex<int> b( 5,  3);
-		const complex<int> c(140/34, -220/34);
-		const complex<int> d = a/b;
-		assert(a/b == c);
-
-		complex<int> e(a);
-		e /= b;
-		assert(e == c);
-	}
+	const double R = 15.0 * meshres[0];
 
 	if (dim==1) {
 		int L=1024;
-		GRID1D initGrid(NF, 0,L);
-		for (int d=0; d<dim; d++)
+		GRID1D initGrid(NF+1, 0,L);
+		for (int d=0; d<dim; d++) {
 			dx(initGrid, d) = meshres[d];
+			if (x0(initGrid,d) == g0(initGrid,d))
+				b0(initGrid,d) = Neumann;
+			else if (x1(initGrid,d) == g1(initGrid,d))
+				b1(initGrid,d) = Neumann;
+		}
 		const vector<int> origin(1, L/2);
 
 		for (int n=0; n<nodes(initGrid); n++) {
@@ -101,9 +53,14 @@ void generate(int dim, const char* filename)
 
 	if (dim==2) {
 		int L=256;
-		GRID2D initGrid(NF, 0,L, 0,L);
-		for (int d=0; d<dim; d++)
+		GRID2D initGrid(NF+1, 0,L, 0,L);
+		for (int d=0; d<dim; d++) {
 			dx(initGrid, d) = meshres[d];
+			if (x0(initGrid,d) == g0(initGrid,d))
+				b0(initGrid,d) = Neumann;
+			else if (x1(initGrid,d) == g1(initGrid,d))
+				b1(initGrid,d) = Neumann;
+		}
 		const vector<int> origin(2, L/2);
 
 		for (int n=0; n<nodes(initGrid); n++) {
@@ -116,9 +73,14 @@ void generate(int dim, const char* filename)
 
 	if (dim==3) {
 		int L=64;
-		GRID3D initGrid(NF, 0,L, 0,L, 0,L);
-		for (int d=0; d<dim; d++)
+		GRID3D initGrid(NF+1, 0,L, 0,L, 0,L);
+		for (int d=0; d<dim; d++) {
 			dx(initGrid, d) = meshres[d];
+			if (x0(initGrid,d) == g0(initGrid,d))
+				b0(initGrid,d) = Neumann;
+			else if (x1(initGrid,d) == g1(initGrid,d))
+				b1(initGrid,d) = Neumann;
+		}
 		const vector<int> origin(3, L/2);
 
 		for (int n=0; n<nodes(initGrid); n++) {
@@ -131,27 +93,20 @@ void generate(int dim, const char* filename)
 }
 
 template<int dim, typename T>
-vector<complex<T> > covariantGradient(const grid<dim,vector<complex<T> >  > & GRID, const vector<int> & x, const vector<vector<complex<T> > >& k)
+vector<complex<T> > covariantGradient(const grid<dim,vector<complex<T> >  > & GRID, const vector<int> & x, const vector<vector<T> >& k)
 {
-	// Encode the nonlinear Laplacian operator, (∇² + 2ⅈ k·∇)
+	// Encode the nonlinear Laplacian operator, (∇² + 2ⅈ k·∇), a.k.a. covariant gradient operator
+
+	const complex<T> coeff(0.0, 2.0);
 
 	// Take standard vector derivatives on n field variables with d dimensions
 	vector<complex<T> > lap = laplacian(GRID, x); // (1 x d) complex vector
 	const vector<vector<complex<T> > > grad = gradient(GRID, x); // (d x n) complex matrix... we want the (n x d) version
 
-	// MMSP knows about vectors, but not matrices, so we have to transpose it manually.
-	const complex<T> blank_c(0.0, 0.0);
-	const vector<complex<T> > blank_v(dim, blank_c);
-	vector<vector<complex<T> > > gradTranspose(NF, blank_v);
+	// Combine Laplacian with gradient projected onto lattice vectors
 	for (int d=0; d<dim; d++)
 		for (int i=0; i<NF; i++)
-			gradTranspose[i][d] = grad[d][i];
-
-	const complex<T> coeff(0.0, 2.0);
-
-	for (int i=0; i<NF; i++) {
-		lap[i] += coeff * (gradTranspose[i] * k[i]);
-	}
+			lap[i] += coeff * (k[i][d] * grad[d][i]);
 
 	return lap;
 }
@@ -171,22 +126,21 @@ void update(grid<dim,vector<complex<T> > >& oldGrid, int steps)
 	grid<dim,vector<complex<T> > > newGrid(oldGrid);
 	grid<dim,vector<complex<T> > > tempGrid(oldGrid);
 
-	const T dt = 5e-4;
-	const T gam = 1.0;
-	const T beta = 1.0;
-	const T eps = 0.125;
-	const vector<T> M(NF, 1.0);
+	const T dt = 0.001;
+	const T bet =  0.0;
+	const T eps = -1.0;
+	const T psi = -0.1; // average density
 
-	// Populate k with reals expressed in complex form
+	// Populate k (lattice vectors) with reals expressed in complex form
 	complex<T> r0i0(0.0, 0.0);
-	vector<complex<T> > k0(2, r0i0); // k0 = (0,0)
-	vector<vector<complex<T> > > k(3, k0); // k = ((0,0),(0,0),(0,0)).
-	k[0][0] = ( std::sqrt(3.0)/2, 0.0);
-	k[0][1] = (-0.5,              0.0);
-	k[1][0] = ( 0.0,              0.0);
-	k[1][1] = ( 1.0,              0.0);
-	k[2][0] = (-std::sqrt(3.0)/2, 0.0);
-	k[2][1] = (-0.5,              0.0);
+	vector<T> k0(2, 0.0); // k0 = (0,0)
+	vector<vector<T> > k(NF, k0); // k = ((0,0),(0,0),(0,0)).
+	k[0][0] =  std::sqrt(3.0)/2;
+	k[0][1] = -0.5;
+	k[1][0] =  0.0;
+	k[1][1] =  1.0;
+	k[2][0] = -std::sqrt(3.0)/2;
+	k[2][1] = -0.5;
 
 	for (int step=0; step<steps; step++) {
 		if (rank==0)
@@ -206,18 +160,12 @@ void update(grid<dim,vector<complex<T> > >& oldGrid, int steps)
 			vector<complex<T> >& newGridN = newGrid(n);
 			const vector<complex<T> > lap = covariantGradient(tempGrid, x, k);
 
-			/*
-			// Un-Coupled EOM
-			for (int i=0; i<NF; i++) {
-				const complex<T>& A = oldGridN[i];
-				newGridN[i] = A + dt * (eps - (gam*A.norm()*A.norm())*A - lap[i]);
-			}
-			*/
-
 			// Store sum of norms-squared
 			T allNormSq = 0.0;
-			for (int i=0; i<NF; i++)
-				allNormSq += std::pow(oldGridN[i].norm(), 2);
+			for (int i=0; i<NF; i++) {
+				const T norm = oldGridN[i].norm();
+				allNormSq += 2.0 * norm*norm;
+			}
 
 			// Store pairwise conjugates
 			vector<complex<T> > conjugates(NF, r0i0);
@@ -227,13 +175,33 @@ void update(grid<dim,vector<complex<T> > >& oldGrid, int steps)
 
 			for (int i=0; i<NF; i++) {
 				const complex<T>& A = oldGridN[i];
-				const T normSq = std::pow(A.norm(), 2);
-				newGridN[i] = A - dt * M[i] * (eps*A + 2.0*beta*conjugates[i] + 3.0*(2.0 * allNormSq - normSq) * A + lap[i]);
+				const T norm = A.norm();
+				newGridN[i] = A - dt * ((eps - 2.0*bet*psi + 3.0*psi*psi) * A
+				                        + (2.0*bet - 6.0*psi)*conjugates[i]
+				                        + 3.0*(allNormSq - norm*norm) * A
+				                        + lap[i]);
 			}
 		}
 
 		swap(oldGrid,newGrid);
 		ghostswap(oldGrid);
+	}
+
+	// Convert amplitudes to density
+	#pragma omp parallel for
+	for (int n=0; n<nodes(oldGrid); n++) {
+		vector<complex<T> >& oldGridN = oldGrid(n);
+		vector<double> r = position(oldGrid, n);
+		for (int d=0; d<dim; d++)
+			r[d] *= dx(oldGrid, d);
+
+		T density = psi;
+		for (int i=0; i<NF; i++) {
+			const T a = std::real(oldGridN[i].value());
+			const T b = std::imag(oldGridN[i].value());
+			density += 2.0 * (a*std::cos(k[i] * r) - b*std::sin(k[i] * r));
+		}
+		oldGridN[NF] = density;
 	}
 }
 
