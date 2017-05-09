@@ -1,9 +1,9 @@
 \documentclass[11pt]{article}
 \usepackage{amsmath,amssymb,siunitx}
-\usepackage[letterpaper,top=1.25in,bottom=1.25in,left=1in,right=1in]{geometry}
+\usepackage[letterpaper,top=1in,bottom=1in,left=0.75in,right=0.75in]{geometry}
 
 \title{Complex Amplitude Model for Swift-Hohenberg Equation}
-\author{Trevor Keller and Nana Ofori-Opoku}
+\author{Trevor Keller (borrowing heavily from Nana Ofori-Opoku)}
 \date{\today}
 
 \begin{document}
@@ -17,35 +17,44 @@ The system represented in MMSP using a grid of vectors of complex scalars.
 The initial condition sets a seed of radius $r=10\Delta x$ at the center,
 with initial values of $(\num{0.35 + 0i}, \num{0.35 + 0i}, \num{0.35 + 0i})$
 inside the seed and $(\num{0 + 0i}, \num{0 + 0i}, \num{0 + 0i})$ outside.
-The mesh resolution $\Delta x=\Delta y=\frac{\pi}{2}$.
 
-\section{Uncoupled Equations}
+\section{Free Energy}
+\[
+	\mathcal{F} = \int_\Omega\left[  \right]\mathrm{d}V
+\]
 
-The equations of motion are then
+
+\section{Equations of Motion}
+The equations of motion are
 \begin{align}
-	\frac{\partial A_i}{\partial t} &= -\left[- \epsilon A_i
-	                                         + \gamma |A_i|^2 A_i
-	                                         + \left(\nabla^2 + \num{2i}\hat{k}_i\cdot\vec{\nabla}\right)^2 A_i\right]\\
-	                                &= \left(\epsilon - \gamma |A_i|^2\right) A_i
-	                                 - \left(\nabla^2 + \num{2i}\hat{k}_i\cdot\vec{\nabla}\right)^2 A_i.	                                         
+	\frac{\partial A_i}{\partial t} &= -M_i\left[\left(\epsilon - 2\beta\psi + 3\psi^2\right)A_i
+	                                   + \left(2\beta - 6\psi\right)\prod\limits_{j\neq i}^{3}A_j^*
+	                                   + 3\left(|A_i|^2 + 2\sum\limits_{j\neq i}^3 |A_j|^2\right) A_i
+	                                   + \left(\nabla^2 + \num{2i}\vec{k}_i\cdot\vec{\nabla}\right)^2A_i\right]
 \end{align}
-The equation is solved using $\gamma = 1$, $\epsilon = 0.5$, $\vec{k}_1 = \left(\frac{ \sqrt{3}}{2}, -\frac{1}{2}\right)$,
-                                                             $\vec{k}_2 = \left(0, 1\right)$,
-                                                             $\vec{k}_3 = \left(\frac{-\sqrt{3}}{2}, -\frac{1}{2}\right)$,
-                                                             and $\Delta t = \num{e-4}$.
 $|A_i|$ denotes the norm or complex modulus of $A_i$.
-The operator $\left(\nabla^2 + \num{2i}\hat{k}_i\cdot\vec{\nabla}\right)^2$ is split into
-two applications of $\left(\nabla^2 + \num{2i}\hat{k}_i\cdot\vec{\nabla}\right)$ using an intermediate grid.
+The operator $\left(\nabla^2 + \num{2i}\vec{k}_i\cdot\vec{\nabla}\right)^2$ is performed by nested
+applications of the covariant gradient operator $\left(\nabla^2 + \num{2i}\vec{k}_i\cdot\vec{\nabla}\right)$ using an intermediate grid.
 
-\section{Coupled Equations}
+\begin{table}[!ht]\centering
+	\begin{tabular}{lll}\hline
+		Parameter        & Symbol       & Value\\\hline
+		``temperature''  & $\epsilon$   & $-0.4$\\
+		                 & $\beta$      & $-0.1$\\
+		Average density  & $\psi$     & $-0.2$\\
+		Mobility         & $M_i$        & $1.0$\\
+		Lattice vector 1 & $\vec{k}_1$  & $\left(\frac{\sqrt{3}}{2}, -\frac{1}{2}\right)$\\
+		Lattice vector 2 & $\vec{k}_2$  & $\left(0, -1\right)$\\
+		Lattice vector 3 & $\vec{k}_3$  & $\left(-\frac{\sqrt{3}}{2}, -\frac{1}{2}\right)$\\
+		Mesh resolution  & $h=\Delta x$ & $\frac{\pi}{2}$\\\hline
+	\end{tabular}
+\end{table}
 
-The equations of motion are then
-\begin{align}
-	\frac{\partial A_i}{\partial t} &= -\left[- \epsilon A_i
-	                                         + \gamma |A_i|^2 A_i
-	                                         + \left(\nabla^2 + \num{2i}\hat{k}_i\cdot\vec{\nabla}\right)^2 A_i\right]\\
-	                                &= \left(\epsilon - \gamma |A_i|^2\right) A_i
-	                                 - \left(\nabla^2 + \num{2i}\hat{k}_i\cdot\vec{\nabla}\right)^2 A_i.	                                         
-\end{align}
+\section{Density}
+To convert from amplitudes back to density -- to see the lattice -- apply the mapping
+\[
+	\Psi = \psi + 2\sum_{j=1}^3\left[\Re(A_j)\cos\left(\vec{k}_j\cdot\vec{r}\right) - \Im(A_j)\sin\left(\vec{k}_j\cdot\vec{r}\right)\right],
+\]
+where $\Re$ is the real part and $\Im$ the imaginary part of the complex scalar at each mesh point.
 
 \end{document}
