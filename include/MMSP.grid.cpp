@@ -2028,7 +2028,7 @@ template<int dim, typename T> void grid<dim,T>::copy(const grid& GRID)
 
 template <int dim, typename T> T laplacian(const MMSP::grid<dim, T>& GRID, const vector<int>& x)
 {
-	T laplacian = 0.0;
+	T laplacian(0.0);
 	MMSP::vector<int> s = x;
 	const T& y = GRID(x);
 
@@ -2048,7 +2048,7 @@ template <int dim, typename T> T laplacian(const MMSP::grid<dim, T>& GRID, const
 template <int dim, typename T> vector<T> laplacian(const grid<dim, vector<T> >& GRID, const vector<int>& x)
 {
 	int N = fields(GRID);
-	vector<T> laplacian(N, 0.0);
+	vector<T> laplacian(N, T(0.0));
 	vector<int> s = x;
 
 	const vector<T>& y = GRID(x);
@@ -2069,7 +2069,7 @@ template <int dim, typename T> vector<T> laplacian(const grid<dim, vector<T> >& 
 
 template<int dim, typename T> T laplacian(const grid<dim,vector<T> >& GRID, const vector<int>& x, const int field)
 {
-	T laplacian = 0.0;
+	T laplacian(0.0);
 	vector<int> s = x;
 
 	const T& y = GRID(x)[field];
@@ -2156,7 +2156,7 @@ template <int dim, typename T> vector<T> grad(const grid<dim, T>& GRID, const ve
 
 template <int dim, typename T> vector<T> divergence(const grid<dim, vector<T> >& GRID, const vector<int>& x)
 {
-	vector<T> divergence(dim, 0.0);
+	vector<T> divergence(dim, T(0.0));
 	vector<int> s = x;
 
 	int N = length(GRID(x));

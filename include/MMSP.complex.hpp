@@ -151,18 +151,36 @@ template <typename T, typename U> complex<T>& operator+=(complex<T>& x, const co
 	x.value() += y.value();
 	return x;
 }
+template <typename T, typename U> complex<T>& operator+=(complex<T>& x, const U& y) {
+	x.value() += y;
+	return x;
+}
 template <typename T, typename U> complex<T> operator+(const complex<T>& x, const complex<U>& y) {
 	complex<T> z(x);
 	z += y;
+	return z;
+}
+template <typename T, typename U> complex<T> operator+(const complex<T>& x, const U& y) {
+	complex<T> z(x);
+	z.value() += y;
 	return z;
 }
 template <typename T, typename U> complex<T>& operator-=(complex<T>& x, const complex<U>& y) {
 	x.value() -= y.value();
 	return x;
 }
+template <typename T, typename U> complex<T>& operator-=(complex<T>& x, const U& y) {
+	x.value() -= y;
+	return x;
+}
 template <typename T, typename U> complex<T> operator-(const complex<T>& x, const complex<U>& y) {
 	complex<T> z(x);
 	z -= y;
+	return z;
+}
+template <typename T, typename U> complex<T> operator-(const complex<T>& x, const U& y) {
+	complex<T> z(x);
+	z.value() -= y;
 	return z;
 }
 template <typename T, typename U> complex<T>& operator*=(complex<T>& x, const complex<U>& y) {
@@ -181,6 +199,11 @@ template <typename T, typename U> complex<T> operator*(const complex<T>& x, cons
 template <typename T, typename U> complex<T> operator*(const U& value, const complex<T>& x) {
 	complex<T> z(x);
 	z.value() *= value;
+	return z;
+}
+template <typename T> complex<T> operator*(const complex<T>& x, const complex<T>& y) {
+	complex<T> z(x);
+	z.value() *= y.value();
 	return z;
 }
 template <typename T> complex<T> operator*(const complex<T>& x, const std::complex<T>& y) {
@@ -204,11 +227,6 @@ template <typename T, typename U> complex<T>& operator/=(complex<T>& x, const U&
 template <typename T> complex<T> operator/(const complex<T>& x, const std::complex<T>& y) {
 	complex<T> z(x);
 	z /= y;
-	return z;
-}
-template <typename T> complex<T> operator*(const complex<T>& x, const complex<T>& y) {
-	complex<T> z(x);
-	z.value() *= y.value();
 	return z;
 }
 template <typename T> complex<T> operator/(const complex<T>& x, const complex<T>& y) {
