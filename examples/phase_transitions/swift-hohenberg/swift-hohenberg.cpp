@@ -28,12 +28,12 @@ void generate(int dim, const char* filename)
 {
 	const complex<double> solid(0.35, 0.0);
 	const complex<double> liquid(0.0, 0.0);
-	const double meshres[NF] = {M_PI/2, M_PI/2, M_PI/2};
-	const double R = 15.0 * meshres[0];
+	const vector<double> meshres(3, M_PI/4);
+	const double R = 30.0 * meshres[0];
 
 	if (dim==1) {
 		int L=1024;
-		GRID1D initGrid(NF+1, 0,L);
+		GRID1D initGrid(NF+1, -L/2,L/2);
 		for (int d=0; d<dim; d++) {
 			dx(initGrid, d) = meshres[d];
 			if (x0(initGrid,d) == g0(initGrid,d))
@@ -41,7 +41,7 @@ void generate(int dim, const char* filename)
 			else if (x1(initGrid,d) == g1(initGrid,d))
 				b1(initGrid,d) = Neumann;
 		}
-		const vector<int> origin(1, L/2);
+		const vector<int> origin(1, 0);
 
 		for (int n=0; n<nodes(initGrid); n++) {
 			vector<int> x = position(initGrid, n);
@@ -53,7 +53,7 @@ void generate(int dim, const char* filename)
 
 	if (dim==2) {
 		int L=256;
-		GRID2D initGrid(NF+1, 0,L, 0,L);
+		GRID2D initGrid(NF+1, -L/2,L/2, -L/2,L/2);
 		for (int d=0; d<dim; d++) {
 			dx(initGrid, d) = meshres[d];
 			if (x0(initGrid,d) == g0(initGrid,d))
@@ -61,7 +61,7 @@ void generate(int dim, const char* filename)
 			else if (x1(initGrid,d) == g1(initGrid,d))
 				b1(initGrid,d) = Neumann;
 		}
-		const vector<int> origin(2, L/2);
+		const vector<int> origin(2, 0);
 
 		for (int n=0; n<nodes(initGrid); n++) {
 			vector<int> x = position(initGrid, n);
@@ -73,7 +73,7 @@ void generate(int dim, const char* filename)
 
 	if (dim==3) {
 		int L=64;
-		GRID3D initGrid(NF+1, 0,L, 0,L, 0,L);
+		GRID3D initGrid(NF+1, -L/2,L/2, -L/2,L/2, -L/2,L/2);
 		for (int d=0; d<dim; d++) {
 			dx(initGrid, d) = meshres[d];
 			if (x0(initGrid,d) == g0(initGrid,d))
@@ -81,7 +81,7 @@ void generate(int dim, const char* filename)
 			else if (x1(initGrid,d) == g1(initGrid,d))
 				b1(initGrid,d) = Neumann;
 		}
-		const vector<int> origin(3, L/2);
+		const vector<int> origin(3, 0);
 
 		for (int n=0; n<nodes(initGrid); n++) {
 			vector<int> x = position(initGrid, n);
@@ -127,9 +127,9 @@ void update(grid<dim,vector<complex<T> > >& oldGrid, int steps)
 	grid<dim,vector<complex<T> > > tempGrid(oldGrid);
 
 	const T dt = 0.001;
-	const T bet =  0.0;
-	const T eps = -1.0;
-	const T psi = -0.1; // average density
+	const T bet =  M_PI/16;
+	const T eps = -M_PI/3;
+	const T psi = -M_PI/16; // average density
 
 	// Populate k (lattice vectors) with reals expressed in complex form
 	complex<T> r0i0(0.0, 0.0);
